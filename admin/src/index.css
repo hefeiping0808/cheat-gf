@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 2026-09-12 00:00:00 CST：合并 h5 后由主项目统一加载 Tailwind，保证 module 页面和 admin 共用一个构建入口。 */
+* {
+  margin: 0;
+  padding: 0;
+}
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+}

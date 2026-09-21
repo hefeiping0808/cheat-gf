@@ -1,0 +1,146 @@
+.dash-card-interactive.ant-card {
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+  box-shadow: none;
+}
+
+.dash-card-interactive.ant-card:hover {
+  background-color: var(--dash-card-hover-bg) !important;
+  border-color: var(--dash-card-hover-border) !important;
+  box-shadow: var(--dash-card-hover-shadow);
+}
+
+.dash-recent-row {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.dash-recent-row:hover {
+  background-color: var(--dash-recent-hover-bg);
+}
+
+.dash-chart-placeholder {
+  transition: border-color 0.2s ease;
+}
+
+.dash-chart-placeholder:hover {
+  border-color: var(--dash-chart-hover-border);
+}
+
+.dash-skel-stat .ant-skeleton-input {
+  min-height: unset !important;
+}
+
+.dash-skel-recent .ant-skeleton-input {
+  min-height: unset !important;
+  margin-block: 0 !important;
+}
+
+.dash-skel-recent .ant-skeleton-avatar {
+  margin-inline-end: 0 !important;
+}
+
+/* 2026-09-13 11:29:26 CST：仪表盘整体使用 flex 约束下方图表和日志区域，避免近期操作表格把页面撑出可视区域。 */
+.dashboard-page {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.dashboard-summary-row {
+  flex: none;
+}
+
+/* 2026-09-13 11:20:35 CST：模块访问量使用 CSS Grid 保证桌面端每行 5 列，并在窄屏下逐级降列。 */
+.dashboard-module-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.dashboard-module-card {
+  min-width: 0;
+}
+
+.dashboard-module-card .ant-statistic-content {
+  font-size: 24px;
+}
+
+.dashboard-module-visits-card {
+  flex: none;
+}
+
+.dashboard-bottom-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(360px, 1fr);
+  flex: 1;
+  min-height: 0;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.dashboard-bottom-card.ant-card {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.dashboard-bottom-card.ant-card > .ant-card-body {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.dashboard-trend-chart {
+  width: 100%;
+  min-height: 240px;
+  flex: 1;
+}
+
+.dashboard-recent-table {
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+}
+
+@media (max-width: 1199px) {
+  .dashboard-module-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 991px) {
+  .dashboard-module-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .dashboard-page {
+    overflow: auto;
+  }
+
+  .dashboard-bottom-grid {
+    grid-template-columns: minmax(0, 1fr);
+    flex: none;
+  }
+
+  .dashboard-bottom-card.ant-card {
+    min-height: 320px;
+  }
+}
+
+@media (max-width: 575px) {
+  .dashboard-module-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 399px) {
+  .dashboard-module-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
