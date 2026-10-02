@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -13,6 +14,10 @@ import (
 	"backend/internal/model"
 	"backend/internal/service"
 )
+
+const maxRegularUsers = 5
+
+var errUserLimitReached = errors.New("regular user limit reached")
 
 type userMutation struct {
 	Username string `json:"username"`
@@ -55,21 +60,41 @@ func createUser(r *ghttp.Request) {
 		writeError(r, http.StatusInternalServerError, "生成密码失败")
 		return
 	}
-	// 2026-09-10 10:52:40 CST：管理端只允许创建普通用户，后端固定角色并忽略客户端传入的 role，避免通过直接请求越权创建管理员。
-	// 2026-09-10 15:12:00 CST：创建普通用户时同时生成唯一 6 位小写字母数字 code，后续访客链接直接使用该映射值。
-	var insertErr error
-	for attempt := 0; attempt < 5; attempt++ {
-		code, codeErr := service.GenerateUserCode()
-		if codeErr != nil {
-			writeError(r, http.StatusInternalServerError, "生成用户 code 失败")
-			return
+	// 2026-10-02 00:29:01 CST：新增普通用户前在事务中锁定管理员记录，再统计现存普通用户，限制最多 5 个并发安全。
+	// 触发场景：管理员通过接口新增账户；固定管理员行作为互斥点，避免两个并发请求都读到剩余名额。
+	// 维护注意：管理员不计入上限，删除普通用户会释放名额；角色必须在后端固定，不能采用客户端传值。
+	err = service.DB().Transaction(requestContext(r), func(ctx context.Context, tx gdb.TX) error {
+		admin, lockErr := tx.GetOne("SELECT id FROM users WHERE role = ? ORDER BY id ASC LIMIT 1 FOR UPDATE", consts.RoleAdmin)
+		if lockErr != nil {
+			return fmt.Errorf("lock user capacity: %w", lockErr)
 		}
-		_, insertErr = service.DB().Model("users").Data(gdb.Map{"username": strings.TrimSpace(req.Username), "code": code, "password": hash, "role": "user"}).Insert()
-		if insertErr == nil {
-			break
+		if admin.IsEmpty() {
+			return errors.New("administrator row missing while locking user capacity")
 		}
+		count, countErr := tx.Model("users").Where("role", consts.RoleUser).Count()
+		if countErr != nil {
+			return fmt.Errorf("count regular users: %w", countErr)
+		}
+		if count >= maxRegularUsers {
+			return errUserLimitReached
+		}
+		var insertErr error
+		for attempt := 0; attempt < 5; attempt++ {
+			code, codeErr := service.GenerateUserCode()
+			if codeErr != nil {
+				return fmt.Errorf("generate user code: %w", codeErr)
+			}
+			_, insertErr = tx.Model("users").Data(gdb.Map{"username": strings.TrimSpace(req.Username), "code": code, "password": hash, "role": consts.RoleUser}).Insert()
+			if insertErr == nil {
+				return nil
+			}
+		}
+		return insertErr
+	})
+	if errors.Is(err, errUserLimitReached) {
+		writeErrorCode(r, http.StatusConflict, "USER_LIMIT_REACHED")
+		return
 	}
-	err = insertErr
 	if err != nil {
 		writeError(r, http.StatusConflict, "用户名已存在或保存失败")
 		return

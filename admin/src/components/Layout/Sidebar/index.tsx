@@ -2,13 +2,16 @@ import { Menu, Layout, theme, Flex, Grid, Drawer, Button } from "antd";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "@tanstack/react-router";
 import {
+  Ban,
   Book,
+  BookOpen,
   Briefcase,
   CircleDashed,
   Folder,
-  Home,
   History,
+  LayoutDashboard,
   PanelLeft,
+  Settings,
   SlidersHorizontal,
   Star,
   User,
@@ -16,7 +19,7 @@ import {
   Zap,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { APP_BRAND_NAME, APP_FAVICON_SRC } from "@/utils/constants";
+import { APP_BRAND_NAME } from "@/utils/constants";
 import { useAuthStore } from "@/stores/auth";
 import { useSettingsStore } from "@/stores/settings";
 import type { MenuItem as MenuItemType } from "@/api/schemas";
@@ -48,14 +51,18 @@ type BuildMenuResult = {
 };
 
 const MENU_ICON_MAP: Record<string, LucideIcon> = {
-  IconLucideLayoutDashboard: Home,
+  // 2026-09-29 22:18:20 CST：系统菜单图标由 API 标识映射到 Lucide 组件；修改菜单标识时需同步更新此表。
+  IconLucideLayoutDashboard: LayoutDashboard,
   IconLucideUsers: User,
   IconLucideUserList: Users,
   IconLucideHistory: History,
   IconLucideStar: Star,
   IconLucideSettings: SlidersHorizontal,
+  IconLucideGear: Settings,
   IconLucideBriefcase: Briefcase,
   IconLucideBookOpen: Book,
+  IconLucideAuditBook: BookOpen,
+  IconLucideBan: Ban,
   IconLucideFolderKanban: Folder,
   IconLucideSparkles: Zap,
   IconLucideShield: SlidersHorizontal,
@@ -252,19 +259,7 @@ export function Sidebar() {
         >
           {isCollapsed ? (
             <div className="sidebar-collapsed-brand">
-              <div className="sidebar-collapsed-brand__logoLayer">
-                <img
-                  src={APP_FAVICON_SRC}
-                  alt="logo"
-                  width={24}
-                  height={24}
-                  style={{
-                    borderRadius: token.borderRadius,
-                    display: "block",
-                    objectFit: "contain",
-                  }}
-                />
-              </div>
+              {/* 2026-09-29 22:15:16 CST：收缩态常驻显示侧栏展开按钮，不使用图片图标或悬停切换层。 */}
               <div className="sidebar-collapsed-brand__toggleLayer">
                 <Button
                   type="text"
@@ -287,7 +282,7 @@ export function Sidebar() {
                   overflow: "hidden",
                 }}
               >
-                <img
+                {/* <img
                   src={APP_FAVICON_SRC}
                   alt="logo"
                   width={24}
@@ -298,7 +293,7 @@ export function Sidebar() {
                     flexShrink: 0,
                     objectFit: "contain",
                   }}
-                />
+                /> */}
                 <div
                   style={{
                     minWidth: 0,
@@ -329,6 +324,7 @@ export function Sidebar() {
         </Flex>
       </Flex>
       <Menu
+        className="admin-sidebar-menu"
         mode="inline"
         selectedKeys={selectedKey ? [selectedKey] : []}
         openKeys={openKeys}
@@ -383,9 +379,9 @@ export function Sidebar() {
     );
   }
 
+  // 2026-09-29 22:21:19 CST：保留同一个 Sider 实例才能播放 Ant Design 自带的宽度收缩过渡，不要按 collapsed 添加 key 强制重挂载。
   return (
     <Sider
-      key={collapsed ? "collapsed" : "expanded"}
       theme="light"
       collapsible
       collapsed={collapsed}

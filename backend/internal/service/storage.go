@@ -17,10 +17,10 @@ func DB() gdb.DB { return g.DB() }
 func Migrate(ctx context.Context) error {
 	statements := []string{
 		`CREATE TABLE IF NOT EXISTS users (id BIGINT PRIMARY KEY AUTO_INCREMENT, username VARCHAR(64) NOT NULL UNIQUE, code VARCHAR(6) NOT NULL UNIQUE, password VARCHAR(255) NOT NULL, role VARCHAR(16) NOT NULL DEFAULT 'user', disabled TINYINT(1) NOT NULL DEFAULT 0, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-		`CREATE TABLE IF NOT EXISTS visitors (id BIGINT PRIMARY KEY AUTO_INCREMENT, module VARCHAR(32) NOT NULL, visitor_key VARCHAR(8) NOT NULL DEFAULT 'key1', user_id BIGINT NOT NULL, ip VARCHAR(64) NOT NULL DEFAULT '', visit_count BIGINT NOT NULL DEFAULT 0, item1 VARCHAR(255) NOT NULL, item2 TEXT, item3 TEXT, item4 TEXT, item5 TEXT, item6 TEXT, item7 TEXT, item8 TEXT, item9 TEXT, item10 TEXT, item11 TEXT, item12 TEXT, item13 TEXT, item14 TEXT, item15 TEXT, item16 TEXT, item17 TEXT, item18 TEXT, item19 TEXT, item20 TEXT, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, UNIQUE KEY uk_visitor_identity (module, user_id, item1), KEY idx_visitors_user (user_id), KEY idx_visitors_ip (ip)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+		`CREATE TABLE IF NOT EXISTS visitors (id BIGINT PRIMARY KEY AUTO_INCREMENT, module VARCHAR(32) NOT NULL, visitor_key VARCHAR(8) NOT NULL DEFAULT 'key1', connection_status VARCHAR(8) NOT NULL DEFAULT 'offline', user_id BIGINT NOT NULL, ip VARCHAR(64) NOT NULL DEFAULT '', visit_count BIGINT NOT NULL DEFAULT 0, item1 VARCHAR(255) NOT NULL, item2 TEXT, item3 TEXT, item4 TEXT, item5 TEXT, item6 TEXT, item7 TEXT, item8 TEXT, item9 TEXT, item10 TEXT, item11 TEXT, item12 TEXT, item13 TEXT, item14 TEXT, item15 TEXT, item16 TEXT, item17 TEXT, item18 TEXT, item19 TEXT, item20 TEXT, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, UNIQUE KEY uk_visitor_identity (module, user_id, item1), KEY idx_visitors_user (user_id), KEY idx_visitors_ip (ip)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
 		`CREATE TABLE IF NOT EXISTS blacklist (id BIGINT PRIMARY KEY AUTO_INCREMENT, user_id BIGINT NOT NULL, ip VARCHAR(64) NOT NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, UNIQUE KEY uk_blacklist (user_id, ip)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
 		`CREATE TABLE IF NOT EXISTS field_mappings (id BIGINT PRIMARY KEY AUTO_INCREMENT, map_key VARCHAR(64) NOT NULL UNIQUE, map_value VARCHAR(255) NOT NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-		`CREATE TABLE IF NOT EXISTS templates (id BIGINT PRIMARY KEY AUTO_INCREMENT, module VARCHAR(32) NOT NULL UNIQUE, label VARCHAR(128) NOT NULL DEFAULT '', template_keys VARCHAR(255) NOT NULL DEFAULT '', title VARCHAR(255) NOT NULL DEFAULT '', site_title VARCHAR(255) NOT NULL DEFAULT '', form_title VARCHAR(255) NOT NULL DEFAULT '', enabled TINYINT(1) NOT NULL DEFAULT 1, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+		`CREATE TABLE IF NOT EXISTS templates (id BIGINT PRIMARY KEY AUTO_INCREMENT, module VARCHAR(32) NOT NULL UNIQUE, label VARCHAR(128) NOT NULL DEFAULT '', template_keys VARCHAR(255) NOT NULL DEFAULT '', title VARCHAR(1024) NOT NULL DEFAULT '', site_title VARCHAR(255) NOT NULL DEFAULT '', form_title VARCHAR(255) NOT NULL DEFAULT '', enabled TINYINT(1) NOT NULL DEFAULT 1, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
 		`CREATE TABLE IF NOT EXISTS visit_events (id BIGINT PRIMARY KEY AUTO_INCREMENT, module VARCHAR(32) NOT NULL, user_id BIGINT NOT NULL, visitor_id BIGINT NOT NULL DEFAULT 0, ip VARCHAR(64) NOT NULL DEFAULT '', request_id VARCHAR(128) NOT NULL DEFAULT '', created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, KEY idx_visit_events_module (module), KEY idx_visit_events_ip (ip), KEY idx_visit_events_created (created_at)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
 		`CREATE TABLE IF NOT EXISTS system_config (config_key VARCHAR(64) PRIMARY KEY, config_value TEXT NOT NULL, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
 		`CREATE TABLE IF NOT EXISTS audit_logs (id BIGINT PRIMARY KEY AUTO_INCREMENT, operator_id BIGINT NULL, operator_username VARCHAR(64) NOT NULL DEFAULT '', target_user_id BIGINT NULL, action VARCHAR(64) NOT NULL, target_type VARCHAR(32) NOT NULL DEFAULT '', target_ids TEXT NOT NULL, target_ref VARCHAR(255) NOT NULL DEFAULT '', request_ip VARCHAR(64) NOT NULL DEFAULT '', success TINYINT(1) NOT NULL DEFAULT 1, error_message TEXT, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, KEY idx_audit_operator (operator_id), KEY idx_audit_target_user (target_user_id), KEY idx_audit_action (action), KEY idx_audit_created (created_at), KEY idx_audit_success (success)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
@@ -39,7 +39,16 @@ func Migrate(ctx context.Context) error {
 	if err := ensureTemplateKeys(ctx); err != nil {
 		return err
 	}
+	if err := ensureTemplateTitleLength(ctx); err != nil {
+		return err
+	}
 	if err := ensureVisitorKeys(ctx); err != nil {
+		return err
+	}
+	if err := ensureVisitorConnectionStatus(ctx); err != nil {
+		return err
+	}
+	if err := resetVisitorConnectionStatus(ctx); err != nil {
 		return err
 	}
 	for i := 1; i <= 10; i++ {
@@ -58,6 +67,15 @@ func Migrate(ctx context.Context) error {
 		g.Log().Warningf(ctx, "初始化数据字典失败: %v", err)
 	}
 	return seedAdmin(ctx)
+}
+
+// ensureTemplateTitleLength 将已有模板标题列扩展到 1024 个字符，启动时重复执行保持幂等。
+// 更新时间：2026-09-27 15:30:30 CST。
+func ensureTemplateTitleLength(ctx context.Context) error {
+	if _, err := DB().Exec(ctx, `ALTER TABLE templates MODIFY COLUMN title VARCHAR(1024) NOT NULL DEFAULT ''`); err != nil {
+		return fmt.Errorf("expand templates.title to 1024 failed: %w", err)
+	}
+	return nil
 }
 
 // ensureTemplateLabels 为已有模板表补充可选的 label 字段，保留空值以便前端回退显示 module 原字符串。
@@ -103,6 +121,26 @@ func ensureVisitorKeys(ctx context.Context) error {
 		if _, err = DB().Exec(ctx, `ALTER TABLE visitors ADD COLUMN visitor_key VARCHAR(8) NOT NULL DEFAULT 'key1' AFTER module`); err != nil {
 			return fmt.Errorf("add visitors.key failed: %w", err)
 		}
+	}
+	return nil
+}
+
+// ensureVisitorConnectionStatus 为旧访客表增加独立在线状态列，历史记录默认离线以避免伪报在线。
+// 更新时间：2026-09-30 10:28:56 CST。
+func ensureVisitorConnectionStatus(ctx context.Context) error {
+	if _, err := DB().Model("visitors").Fields("connection_status").Limit(1).All(); err != nil {
+		if _, err = DB().Exec(ctx, `ALTER TABLE visitors ADD COLUMN connection_status VARCHAR(8) NOT NULL DEFAULT 'offline' AFTER visitor_key`); err != nil {
+			return fmt.Errorf("add visitors.connection_status failed: %w", err)
+		}
+	}
+	return nil
+}
+
+// resetVisitorConnectionStatus 清理上次进程异常退出后遗留的在线标记；新进程尚无已登记的 H5 WebSocket。
+// 更新时间：2026-09-30 10:28:56 CST。
+func resetVisitorConnectionStatus(ctx context.Context) error {
+	if _, err := DB().Model("visitors").Where("connection_status", "online").Data(map[string]any{"connection_status": "offline"}).Update(); err != nil {
+		return fmt.Errorf("reset visitors.connection_status failed: %w", err)
 	}
 	return nil
 }

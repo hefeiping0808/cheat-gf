@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { App, Button, Card, Checkbox, Modal, Popconfirm, Select, Space, Table, Typography } from "antd";
+import { App, Button, Card, Checkbox, Modal, Popconfirm, Select, Space, Table, Tag, Typography } from "antd";
 import { useEffect, useMemo, useRef, useState, type Key } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { businessApi, type VisitorRow } from "@/api/business";
@@ -12,6 +12,8 @@ import { connectRealtime, type RealtimeConnection } from "@/utils/realtime";
 import { playVisitorSound } from "@/utils/visitorSound";
 import { createTablePagination } from "@/utils/tablePagination";
 import { BatchActionBar } from "@/components/BatchActionBar";
+import { IpRegionDisplay } from "@/components/IpRegionDisplay";
+import { color } from "echarts";
 
 export const Route = createFileRoute("/admin/_auth/visitors/")({ component: VisitorsPage });
 
@@ -50,7 +52,7 @@ function VisitorsPage() {
   const client = useQueryClient();
   const usersQuery = useQuery({ queryKey: ["user-options"], queryFn: businessApi.userOptions, enabled: isAdmin });
   const templatesQuery = useQuery({ queryKey: ["templates", "visitor-options"], queryFn: () => businessApi.templates(1, 100) });
-  const dictionaryQuery = useQuery({ queryKey: ["dictionary", "visitor-options"], queryFn: () => businessApi.dictionary(1, 40) });
+  const dictionaryQuery = useQuery({ queryKey: ["dictionary", "visitor-options"], queryFn: () => businessApi.dictionary(1, 100) });
   const dictionaryNames = useMemo(() => Object.fromEntries((dictionaryQuery.data?.list ?? []).map((item) => [item.key, item.label?.trim() || item.key])), [dictionaryQuery.data]);
   // 2026-09-13 11:38:08 CST：访客表格沿用模板管理返回的 module label 映射，未配置时回退原 module 标识。
   // 触发场景：管理员为 module 配置展示名称后重新进入访客管理；维护时保留 module 作为查询和链接参数，不要替换数据主键。
@@ -88,7 +90,7 @@ function VisitorsPage() {
       url: `${protocol}//${apiBase.host}/api/ws?r=${realtimeRole}&token=${encodeURIComponent(token)}`,
       onMessage: (event) => {
         try {
-          const body = JSON.parse(event.data) as { type?: string; ok?: boolean; reason?: string; module?: string; key?: string; visitorId?: number; userId?: number };
+          const body = JSON.parse(event.data) as { type?: string; ok?: boolean; reason?: string; module?: string; key?: string; submittedKey?: string; visitorId?: number; userId?: number };
           if (body.type === "visitor.updated") {
             const inSelectedUser = !selectedUserId || String(body.userId) === selectedUserId;
             const isNewVisitor = body.visitorId != null && !knownVisitorIdsRef.current.has(body.visitorId);
@@ -104,6 +106,20 @@ function VisitorsPage() {
                 });
               });
             }
+            // 2026-09-21 15:20:00 CST：收到独立 Page 提交事件后刷新访客答案，并保留 submittedKey 供调试定位来源页面。
+            // 触发场景：同一访客逐个提交 module 下的 key 页面；表格数据仍通过 HTTP 重新读取，避免事件只携带部分字段造成脏数据。
+            // 维护注意：key 是后台控制状态，submittedKey 是本次提交来源，两者语义不能互换。
+            if (body.submittedKey) console.debug("[visitor] 页面提交更新", { module: body.module, submittedKey: body.submittedKey, visitorId: body.visitorId });
+            void client.invalidateQueries({ queryKey: ["visitors"] });
+          }
+          if (body.type === "visitor.connection.updated") {
+            // 2026-09-30 10:28:56 CST：H5 WebSocket 状态变更后刷新访客分页数据，表格在线状态无需手动刷新。
+            // 触发场景：H5 建连、最后一个标签页断开或服务端心跳超时；连接状态仍以访客列表接口结果为准。
+            void client.invalidateQueries({ queryKey: ["visitors"] });
+          }
+          if (body.type === "visitor.key.updated") {
+            // 2026-10-02 00:48:39 CST：H5 心跳同步题号后刷新访客列表，避免等待下一次手动刷新。
+            // 触发场景：访客端切换 key 并立即发送心跳；使用独立事件避免触发新访客提示音。
             void client.invalidateQueries({ queryKey: ["visitors"] });
           }
           if (body.type === "visitor.command.result" && !body.ok && body.reason === "no_connection") {
@@ -204,9 +220,12 @@ function VisitorsPage() {
   // 触发场景：普通用户登录访客管理页；管理员仍保留归属用户列用于区分筛选结果。
   const columns = [
     { title: t("visitors.module"), dataIndex: "module", render: (module: string) => moduleLabels[module] || module },
-    { title: t("visitors.key"), dataIndex: "key", render: (key?: string) => dictionaryNames[key || "key1"] || key || "key1" },
+    // 2026-09-30 10:39:01 CST：访客离线时隐藏题号，在线时继续按数据字典显示当前题号。
+    // 触发场景：访客管理列表读取到连接状态为 offline；仅影响展示，不清除数据库中的 visitor_key。
+    { title: t("visitors.key"), dataIndex: "key", render: (key: string | undefined, row: VisitorRow) => row.connection_status === "online" ? <div style={{ color: "pink" }}>{dictionaryNames[key ?? ""] || key || "-"}</div> : null },
+    { title: t("visitors.connectionStatus"), dataIndex: "connection_status", render: (status?: string) => <Tag color={status === "online" ? "success" : "default"}>{status === "online" ? t("visitors.online") : t("visitors.offline")}</Tag> },
     ...(isAdmin ? [{ title: t("visitors.owner"), dataIndex: "username" }] : []),
-    { title: t("visitors.ip"), dataIndex: "ip", width: 180 },
+    { title: t("visitors.ip"), dataIndex: "ip", width: 180, render: (ip: string) => <IpRegionDisplay ip={ip} /> },
     { title: t("visitors.updatedAt"), dataIndex: "updated_at" },
     ...itemColumns,
     {

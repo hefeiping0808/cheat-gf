@@ -83,9 +83,14 @@ func submitVisitor(r *ghttp.Request) {
 		writeJSON(r, map[string]string{"message": "重复提交已忽略"})
 		return
 	}
-	// 2026-09-13 12:05:00 CST：访客提交成功后将当前题号状态写为 waiting，提交前携带的 key 只用于校验当前页面状态。
-	// 触发场景：H5 完成任意 key 页面后进入等待页；维护时不要把 waiting 放入模板可配置 keys，Admin 只读展示该状态。
-	data := gdb.Map{"module": req.Module, "visitor_key": service.VisitorWaitingKey, "user_id": owner["id"].Int64(), "ip": r.GetClientIp(), "item1": req.Items["item1"], "visit_count": 1}
+	// 2026-09-30 10:28:56 CST：提交访客资料时同步当前 H5 连接状态，处理 WebSocket 先于首条访客记录建立的情况。
+	// 触发场景：页面首次提交前已完成 WebSocket 握手；维护时题号仍写入 visitor_key，连接状态只写独立列。
+	defer service.LockAppConnectionState(req.Module, owner["id"].Int64(), req.Items["item1"])()
+	connectionStatus := "offline"
+	if service.AppConnectionCount(req.Module, owner["id"].Int64(), req.Items["item1"]) > 0 {
+		connectionStatus = "online"
+	}
+	data := gdb.Map{"module": req.Module, "visitor_key": service.VisitorWaitingKey, "connection_status": connectionStatus, "user_id": owner["id"].Int64(), "ip": r.GetClientIp(), "item1": req.Items["item1"], "visit_count": 1}
 	for i := 2; i <= 20; i++ {
 		key := fmt.Sprintf("item%d", i)
 		if value, ok := req.Items[key]; ok {
@@ -111,10 +116,10 @@ func submitVisitor(r *ghttp.Request) {
 		visitorID = result
 	}
 	_, _ = service.DB().Model("visit_events").Data(gdb.Map{"module": req.Module, "user_id": owner["id"].Int64(), "visitor_id": visitorID, "ip": r.GetClientIp(), "request_id": requestID}).Insert()
-	// 2026-09-10 18:50:00 CST：推送访客更新时补充归属用户 ID，Admin 可在筛选用户时准确判断是否为当前表格的新记录。
-	// 触发场景：访客首次提交或再次提交触发 visitor.updated；前端据 visitorId 判断新增，据 userId 判断当前筛选范围。
-	// 维护注意：visitorId 和 userId 仅用于实时订阅端识别，不改变访客数据保存和定向控制逻辑。
-	service.PublishVisitor(owner["id"].Int64(), map[string]any{"type": "visitor.updated", "module": req.Module, "key": service.VisitorWaitingKey, "visitorId": visitorID, "userId": owner["id"].Int64(), "item1": req.Items["item1"]})
+	// 2026-09-21 15:20:00 CST：实时事件保留本次提交的 key，同时继续用 waiting 表示访客已提交、等待 Admin 下一步操作。
+	// 触发场景：同一 module 的不同 key 页面独立提交；Admin 需要知道本次更新来自哪个页面并刷新答案列。
+	// 维护注意：visitor_key 仍保存 waiting 状态，submittedKey 仅用于实时事件，不改变管理员下一步导航规则。
+	service.PublishVisitor(owner["id"].Int64(), map[string]any{"type": "visitor.updated", "module": req.Module, "key": service.VisitorWaitingKey, "submittedKey": visitorKey, "visitorId": visitorID, "userId": owner["id"].Int64(), "item1": req.Items["item1"]})
 	writeJSON(r, map[string]any{"visitorId": visitorID, "message": "提交成功"})
 }
 
@@ -246,7 +251,7 @@ func exportVisitorItemKeys(raw string) []string {
 	seen := make(map[string]struct{}, 20)
 	for _, value := range strings.Split(raw, ",") {
 		key := strings.TrimSpace(value)
-		if !service.IsDataDictionaryKey(key) {
+		if !service.IsVisitorItemKey(key) {
 			continue
 		}
 		if _, exists := seen[key]; exists {

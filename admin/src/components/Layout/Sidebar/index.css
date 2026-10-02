@@ -16,7 +16,6 @@
   box-sizing: border-box;
 }
 
-.sidebar-collapsed-brand__logoLayer,
 .sidebar-collapsed-brand__toggleLayer {
   position: absolute;
   inset: 0;
@@ -25,38 +24,58 @@
   justify-content: center;
 }
 
-.sidebar-collapsed-brand__logoLayer {
-  opacity: 1;
-  transition: opacity 0.2s ease;
-  pointer-events: none;
-}
-
-.sidebar-collapsed-brand__toggleLayer {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
-}
-
-.sidebar-collapsed-brand:hover .sidebar-collapsed-brand__logoLayer {
-  opacity: 0;
-}
-
-.sidebar-collapsed-brand:hover .sidebar-collapsed-brand__toggleLayer {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.sidebar-collapsed-brand:focus-within .sidebar-collapsed-brand__logoLayer {
-  opacity: 0;
-}
-
-.sidebar-collapsed-brand:focus-within .sidebar-collapsed-brand__toggleLayer {
-  opacity: 1;
-  pointer-events: auto;
-}
-
 .sidebar-collapsed-brand__toggle.ant-btn {
   width: 100%;
   height: 100%;
   margin: 0;
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease;
+}
+
+/* 2026-09-29 22:21:19 CST：菜单展开/收缩时保留 Ant Design 原生过渡，并让桌面菜单悬停反馈轻微滑入、图标弹出。 */
+.admin-sidebar-menu .ant-menu-item,
+.admin-sidebar-menu .ant-menu-submenu-title {
+  transition:
+    color 0.18s ease,
+    background-color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.admin-sidebar-menu .ant-menu-item-icon {
+  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.admin-sidebar-menu:not(.ant-menu-inline-collapsed) .ant-menu-item:hover,
+.admin-sidebar-menu:not(.ant-menu-inline-collapsed)
+  .ant-menu-submenu-title:hover {
+  transform: translateX(2px);
+}
+
+.admin-sidebar-menu .ant-menu-item:hover .ant-menu-item-icon,
+.admin-sidebar-menu .ant-menu-submenu-title:hover .ant-menu-item-icon {
+  transform: scale(1.08);
+}
+
+.sidebar-collapsed-brand__toggle.ant-btn:hover {
+  transform: scale(1.04);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-sidebar-menu .ant-menu-item,
+  .admin-sidebar-menu .ant-menu-submenu-title,
+  .admin-sidebar-menu .ant-menu-item-icon,
+  .sidebar-collapsed-brand__toggle.ant-btn {
+    transition: none;
+  }
+
+  .admin-sidebar-menu:not(.ant-menu-inline-collapsed) .ant-menu-item:hover,
+  .admin-sidebar-menu:not(.ant-menu-inline-collapsed)
+    .ant-menu-submenu-title:hover,
+  .admin-sidebar-menu .ant-menu-item:hover .ant-menu-item-icon,
+  .admin-sidebar-menu .ant-menu-submenu-title:hover .ant-menu-item-icon,
+  .sidebar-collapsed-brand__toggle.ant-btn:hover {
+    transform: none;
+  }
 }

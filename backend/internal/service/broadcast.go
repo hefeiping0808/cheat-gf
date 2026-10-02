@@ -17,6 +17,7 @@ var subscribers = struct {
 var nextSubscriberID int64
 
 type appConnectionKey struct {
+	module string
 	userID int64
 	item1  string
 }
@@ -25,6 +26,16 @@ var appSubscribers = struct {
 	sync.RWMutex
 	items map[appConnectionKey]map[int64]Subscriber
 }{items: make(map[appConnectionKey]map[int64]Subscriber)}
+
+type appStateLock struct {
+	mu   sync.Mutex
+	refs int
+}
+
+var appStateLocks = struct {
+	sync.Mutex
+	items map[appConnectionKey]*appStateLock
+}{items: make(map[appConnectionKey]*appStateLock)}
 
 func Subscribe(userID int64, fn Subscriber) func() {
 	subscribers.Lock()
@@ -53,11 +64,33 @@ func PublishVisitor(userID int64, payload any) {
 	subscribers.RUnlock()
 }
 
-// 2026-09-10 14:35:00 CST：App 连接按归属用户和 item1 建立独立订阅索引，供 Admin 定向控制指定访客页面。
-// 触发场景：同一用户下存在多个访客连接时，导航指令只能送达 item1 完全匹配的连接。
-// 维护注意：item1 在注册和发布时都去除首尾空格；连接关闭必须调用返回的取消函数，避免旧连接继续接收指令。
-func SubscribeApp(userID int64, item1 string, fn Subscriber) func() {
-	key := appConnectionKey{userID: userID, item1: strings.TrimSpace(item1)}
+// 2026-09-30 10:28:56 CST：App 连接按 module、归属用户和 item1 建立索引，并串行化同一访客的状态切换。
+// 触发场景：同一访客多标签页连接/断开时保持连接状态准确，Admin 导航也只投递到对应模板。
+// 维护注意：状态锁只覆盖连接状态迁移；连接关闭必须调用取消函数，避免残留订阅和锁记录。
+func LockAppConnectionState(module string, userID int64, item1 string) func() {
+	key := appConnectionKey{module: strings.TrimSpace(module), userID: userID, item1: strings.TrimSpace(item1)}
+	appStateLocks.Lock()
+	stateLock := appStateLocks.items[key]
+	if stateLock == nil {
+		stateLock = &appStateLock{}
+		appStateLocks.items[key] = stateLock
+	}
+	stateLock.refs++
+	appStateLocks.Unlock()
+	stateLock.mu.Lock()
+	return func() {
+		stateLock.mu.Unlock()
+		appStateLocks.Lock()
+		stateLock.refs--
+		if stateLock.refs == 0 {
+			delete(appStateLocks.items, key)
+		}
+		appStateLocks.Unlock()
+	}
+}
+
+func SubscribeApp(module string, userID int64, item1 string, fn Subscriber) func() {
+	key := appConnectionKey{module: strings.TrimSpace(module), userID: userID, item1: strings.TrimSpace(item1)}
 	appSubscribers.Lock()
 	if appSubscribers.items[key] == nil {
 		appSubscribers.items[key] = make(map[int64]Subscriber)
@@ -75,9 +108,17 @@ func SubscribeApp(userID int64, item1 string, fn Subscriber) func() {
 	}
 }
 
-func PublishAppCommand(userID int64, item1 string, payload any) bool {
+func AppConnectionCount(module string, userID int64, item1 string) int {
+	key := appConnectionKey{module: strings.TrimSpace(module), userID: userID, item1: strings.TrimSpace(item1)}
+	appSubscribers.RLock()
+	count := len(appSubscribers.items[key])
+	appSubscribers.RUnlock()
+	return count
+}
+
+func PublishAppCommand(module string, userID int64, item1 string, payload any) bool {
 	data, _ := json.Marshal(payload)
-	key := appConnectionKey{userID: userID, item1: strings.TrimSpace(item1)}
+	key := appConnectionKey{module: strings.TrimSpace(module), userID: userID, item1: strings.TrimSpace(item1)}
 	appSubscribers.RLock()
 	targets := appSubscribers.items[key]
 	for _, fn := range targets {

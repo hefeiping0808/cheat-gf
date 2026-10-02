@@ -12,3 +12,7 @@ data:
     logger:
       level : "all"
       stdout: true
+
+    ip-region:
+      # 2026-09-30 02:13:10 CST：可填写逗号分隔的公网回源 IP/CIDR，避免对已知源站地址查询归属地。
+      skip-ips: ""

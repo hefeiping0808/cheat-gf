@@ -1,10 +1,11 @@
-const HEARTBEAT_INTERVAL_MS = 20_000;
+const HEARTBEAT_INTERVAL_MS = 2_000;
 const HEARTBEAT_TIMEOUT_MS = 10_000;
 const INITIAL_RECONNECT_DELAY_MS = 500;
 const MAX_RECONNECT_DELAY_MS = 10_000;
 
 type RealtimeOptions = {
   url: string;
+  heartbeatPayload?: () => unknown;
   onMessage?: (event: MessageEvent) => void;
   onOpen?: () => void;
   onClose?: () => void;
@@ -25,9 +26,9 @@ function isPong(data: unknown) {
   }
 }
 
-// 2026-09-10 14:08:41 CST：App WebSocket 改为每 20 秒发送心跳，保留 10 秒超时断开和指数退避重连。
-// 触发场景：移动网络切换、服务端重启或代理连接假在线时，自动恢复访客实时订阅。
-// 维护注意：心跳使用应用层 JSON ping/pong，清理函数必须在路由卸载时调用，避免重复连接。
+// 2026-10-02 01:00:38 CST：H5 WebSocket 每 2 秒发送含当前题号的心跳，保留 10 秒超时断开和指数退避重连。
+// 触发场景：H5 页面切换 key 后及时同步访客题号，并在网络切换或服务端重启后恢复订阅。
+// 维护注意：Admin 使用独立 realtime 模块，调整本间隔只影响 H5；清理函数必须在路由卸载时调用。
 export function connectRealtime(options: RealtimeOptions): RealtimeConnection {
   let disposed = false;
   let socket: WebSocket | null = null;
@@ -45,7 +46,7 @@ export function connectRealtime(options: RealtimeOptions): RealtimeConnection {
 
   const sendHeartbeat = () => {
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
-    socket.send(JSON.stringify({ type: "ping" }));
+    socket.send(JSON.stringify(options.heartbeatPayload?.() ?? { type: "ping" }));
     if (heartbeatTimeout !== null) window.clearTimeout(heartbeatTimeout);
     heartbeatTimeout = window.setTimeout(() => {
       socket?.close(4000, "heartbeat timeout");

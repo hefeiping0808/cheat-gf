@@ -31,6 +31,9 @@ interface H5State {
 
   infoArr: string[];
   setInfoArr: (infoArr: string[]) => void;
+
+  pageLoading: boolean;
+  setPageLoading: (pageLoading: boolean) => void;
 }
 
 // 2026-09-13 12:05:00 CST：h5-storage 持久化 module、token、key 和 item1，支持刷新后恢复题号页面并重建定向 WS。
@@ -61,6 +64,9 @@ export const useH5Store = create<H5State>()(
 
       infoArr: [],
       setInfoArr: (infoArr: string[]) => set({ infoArr }),
+
+      pageLoading: false,
+      setPageLoading: (pageLoading: boolean) => set({ pageLoading }),
     }),
     {
       name: "h5-storage",

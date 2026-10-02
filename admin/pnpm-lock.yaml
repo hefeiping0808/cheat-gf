@@ -36,6 +36,12 @@ importers:
       lucide-react:
         specifier: ^1.7.0
         version: 1.7.0(react@19.2.4)
+      rc-hooks:
+        specifier: ^3.4.0
+        version: 3.4.0(react@19.2.4)
+      rc-slider-captcha:
+        specifier: ^1.9.0
+        version: 1.9.0(react@19.2.4)
       react:
         specifier: ^19.2.4
         version: 19.2.4
@@ -1574,6 +1580,9 @@ packages:
     resolution: {integrity: sha512-b6Ilus+c3RrdDk+JhLKUAQfzzgLEPy6wcXqS7f/xe1EETvsDP6GORG7SFuOs6cID5YkqchW/LXZbX5bc8j7ZcQ==}
     engines: {node: '>=8'}
 
+  cache2@3.1.6:
+    resolution: {integrity: sha512-zN2VD/5Wsrr5MbE0wfnKcGeZ83yZm3MY5InCPr/MoC8Cc3GlkhQQ0RGsd8e5K0iLu6XUDmcXkoTx30vrgoLrIg==}
+
   camelcase-css@2.0.1:
     resolution: {integrity: sha512-QOSvevhslijgYwRx6Rv7zKdMF8lbRmx+uQGx2+vDc+KI/eBnsy9kit5aj23AgGu3pa4t9AgwbnXWqS+iOY+2aA==}
     engines: {node: '>= 6'}
@@ -1680,6 +1689,9 @@ packages:
 
   electron-to-chromium@1.5.427:
     resolution: {integrity: sha512-n14zb3FdsChZ2BNobqNHAJMcP3ifFv4paox2LvCrfVAQcqGiSURgbJl+PfMpHVCNFkStnNc+RRVtPBTVW5PDgw==}
+
+  emitter-pro@1.2.4:
+    resolution: {integrity: sha512-8E1XCG4qNIxOI2SRK+zsf7P7/7VG4XFbiDYbx9+StynbNYPbDvt70yrdUpFAWM06o0c8EmbF4KRnXRdyfFH+PA==}
 
   emoji-regex@8.0.0:
     resolution: {integrity: sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A==}
@@ -2123,6 +2135,11 @@ packages:
       react: '>=16.9.0'
       react-dom: '>=16.9.0'
 
+  rc-hooks@3.4.0:
+    resolution: {integrity: sha512-LJ2X8AlXVuLLg7abUAN7+Owa7jANUfrz5TKs29S5WuSG+BBDjFIni6ziMi0A8NNu7B1n5ySprVpCyZW8AzAQfg==}
+    peerDependencies:
+      react: '>= 16.8.6'
+
   rc-resize-observer@0.2.6:
     resolution: {integrity: sha512-YX6nYnd6fk7zbuvT6oSDMKiZjyngjHoy+fz+vL3Tez38d/G5iGdaDJa2yE7345G6sc4Mm1IGRUIwclvltddhmA==}
     peerDependencies:
@@ -2134,6 +2151,11 @@ packages:
     peerDependencies:
       react: '>=16.9.0'
       react-dom: '>=16.9.0'
+
+  rc-slider-captcha@1.9.0:
+    resolution: {integrity: sha512-wds3KDrsoTeF4oKC2Ej6xoAFFcYYN2mSIDoWXeDMgQLv4/Au2MdE1H40KcU5aRhg1tr2VSgn+uFSH3zGhGoUeQ==}
+    peerDependencies:
+      react: '>=16.9.0'
 
   rc-util@4.21.1:
     resolution: {integrity: sha512-Z+vlkSQVc1l8O2UjR3WQ+XdWlhj5q9BMQNLk2iOBch75CqPfrJyGtcWMcnhRlNuDu0Ndtt4kLVO8JI8BrABobg==}
@@ -2409,8 +2431,15 @@ packages:
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
+  ut2@1.21.5:
+    resolution: {integrity: sha512-13b26tbtWQDJqYYtK0iUJSG+1AEXAlxi3ii/OuAOG5Y69+U4IQIB5VcEXPPW6wT1D2lqnCp4totJVCUQToqtuw==}
+    engines: {node: '>=10'}
+
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
+
+  util-helpers@5.8.1:
+    resolution: {integrity: sha512-NfdDaQJCzDeBCcA7ACIcWeOL0ZJa2e9uwugFzH6gkby4AsFrmx/wsntjfP95qEfsnZyKD3EbPoEepGzFgRLGHA==}
 
   vite-plus@0.1.12:
     resolution: {integrity: sha512-8s1RzomZkgrJRiwiYWGq3R0txFPYfBBJGp73XNHQnme0KTTVH5dNm/E2GNyBSMFJbeeF7eh1OSgqWVc2FpR6eA==}
@@ -3962,6 +3991,11 @@ snapshots:
 
   cac@6.7.14: {}
 
+  cache2@3.1.6:
+    dependencies:
+      emitter-pro: 1.2.4
+      tslib: 2.8.1
+
   camelcase-css@2.0.1: {}
 
   caniuse-lite@1.0.30001780: {}
@@ -4045,6 +4079,8 @@ snapshots:
   electron-to-chromium@1.5.313: {}
 
   electron-to-chromium@1.5.427: {}
+
+  emitter-pro@1.2.4: {}
 
   emoji-regex@8.0.0: {}
 
@@ -4450,6 +4486,14 @@ snapshots:
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
 
+  rc-hooks@3.4.0(react@19.2.4):
+    dependencies:
+      cache2: 3.1.6
+      react: 19.2.4
+      tslib: 2.8.1
+      ut2: 1.21.5
+      util-helpers: 5.8.1
+
   rc-resize-observer@0.2.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
     dependencies:
       '@babel/runtime': 7.29.2
@@ -4467,6 +4511,13 @@ snapshots:
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
       resize-observer-polyfill: 1.5.1
+
+  rc-slider-captcha@1.9.0(react@19.2.4):
+    dependencies:
+      classnames: 2.5.1
+      rc-hooks: 3.4.0(react@19.2.4)
+      react: 19.2.4
+      tslib: 2.8.1
 
   rc-util@4.21.1:
     dependencies:
@@ -4731,7 +4782,17 @@ snapshots:
     dependencies:
       react: 19.2.4
 
+  ut2@1.21.5:
+    dependencies:
+      tslib: 2.8.1
+
   util-deprecate@1.0.2: {}
+
+  util-helpers@5.8.1:
+    dependencies:
+      cache2: 3.1.6
+      tslib: 2.8.1
+      ut2: 1.21.5
 
   vite-plus@0.1.12(@types/node@22.20.3)(@voidzero-dev/vite-plus-core@0.1.12(@types/node@22.20.3)(esbuild@0.27.4)(jiti@1.21.7)(tsx@4.21.0)(typescript@5.9.3))(esbuild@0.27.4)(jiti@1.21.7)(tsx@4.21.0)(typescript@5.9.3):
     dependencies:

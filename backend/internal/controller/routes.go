@@ -17,6 +17,7 @@ func RegisterRoutes(group *ghttp.RouterGroup) {
 	group.POST("/api/auth/logout", withAuth(withAudit("auth.logout", "user", func(r *ghttp.Request) { writeJSON(r, map[string]string{"message": "已退出"}) }), false))
 	group.GET("/api/audit-logs/operators", withAuth(listAuditOperators, true))
 	group.GET("/api/audit-logs", withAuth(listAuditLogs, true))
+	group.GET("/api/ip-region", withAuth(lookupIPRegion, false))
 
 	// 2026-09-10 11:32:18 CST：用户筛选选项只服务于管理员跨用户查询，普通用户不应通过该接口获取全量用户信息。
 	group.GET("/api/users/options", withAuth(listUserOptions, true))
@@ -37,7 +38,9 @@ func RegisterRoutes(group *ghttp.RouterGroup) {
 	group.DELETE("/api/mappings/:id", withAuth(withAudit("mappings.delete", "mapping", deleteMapping), true))
 	group.POST("/api/mappings/batch", withAuth(withAudit("mappings.batch", "mapping", batchMappings), true))
 	group.GET("/api/dictionary", withAuth(listDataDictionary, false))
+	group.POST("/api/dictionary", withAuth(withAudit("dictionary.create", "dictionary", createDataDictionary), true))
 	group.PUT("/api/dictionary/:key", withAuth(withAudit("dictionary.update", "dictionary", updateDataDictionary), true))
+	group.DELETE("/api/dictionary/:key", withAuth(withAudit("dictionary.delete", "dictionary", deleteDataDictionary), true))
 	group.POST("/api/dictionary/batch", withAuth(withAudit("dictionary.batch", "dictionary", batchDataDictionary), true))
 
 	group.GET("/api/templates", withAuth(listTemplates, false))

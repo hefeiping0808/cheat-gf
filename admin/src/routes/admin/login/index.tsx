@@ -107,14 +107,14 @@ function LoginPage() {
               wrap="wrap"
               style={{ marginBottom: token.marginLG }}
             >
-              <img
+              {/* <img
                 src={APP_FAVICON_SRC}
                 alt=""
                 width={32}
                 height={32}
                 draggable={false}
                 style={{ display: "block", flexShrink: 0 }}
-              />
+              /> */}
               <Typography.Title
                 level={3}
                 style={{

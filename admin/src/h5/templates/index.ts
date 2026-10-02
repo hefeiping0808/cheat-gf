@@ -27,3 +27,5 @@ export const moduleComponents: Record<string, ModulePageComponent> = {
   module9: Module9Page,
   module10: Module10Page,
 };
+
+export type stepType = "step1" | "step2" | "step3" | "step4" | "step5" | "step6" | "step7" | "step8" | "step9" | "step10";

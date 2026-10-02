@@ -1,14 +1,36 @@
-import { useEffect, useState } from "react";
-import { Form, Input, Button, Image } from "antd";
+import { use, useEffect } from "react";
+import { Form, Input, Button } from "antd";
 import { useModuleData } from "./moduleContext";
-import { Page4, Page2, Page3, Page5 } from '../pages'
-import { useH5Store } from '../store'
+import { Page4, Page2, Page3, Page5, Page6, Page12, Page9 } from '../pages';
+import { useH5Store } from '../store';
 
 
-export const ITEM_KEYS = ["item1", "item8"] as const;
+// 2026-09-21 15:20:00 CST：为 module1 增加按 key 配置页面字段的示例。
+// 触发场景：key1 和 key6 属于同一个 module，但分别提交不同的 item；后续新增页面只需在这里补充 key 与字段映射。
+// 维护注意：每个页面提交时会自动携带 Zustand 中的 item1，因此其他页面可以不重复渲染 item1 输入框。
+const LEGACY_PAGE_ITEM_KEYS = ["item1", "item8"] as const;
+
+export const PAGE_ITEM_KEYS: Record<string, readonly string[]> = {
+  key1: ["item1", "item8"],
+  key2: ["item5"],
+  key3: ["item2"],
+  key4: ["item5"],
+  key5: ["item5"],
+  key6: ["item2"],
+  key7: ["item4", "item7"],
+  key8: ["item2"],
+  key9: ["item2"],
+  key10: ["item2"],
+  key11: ["item2"],
+  key12: ["item4", "item7"],
+  key13: ["item2"],
+  key14: ["item2"],
+};
+
+export const ITEM_KEYS = ["item1", "item2", "item8"] as const;
 
 export default function Module1Page() {
-  const { setMmoduleInfo, infoArr, setInfoArr } = useH5Store()
+  const { setMmoduleInfo, infoArr, setInfoArr, setKey } = useH5Store()
   const { key } = useModuleData();
   const moduleData = useModuleData();
   const isSubmitDisabled = moduleData.submitting || !moduleData.canSubmit;
@@ -19,6 +41,10 @@ export default function Module1Page() {
     document.title = moduleData.moduleInfo.siteTitle || "";
     setInfoArr(moduleData.moduleInfo.title.split('|') || ''); // 获取信息列表
   }, [moduleData.moduleInfo.siteTitle, key]);
+
+  useEffect(() => {
+    // setKey('key1');
+  }, []);
 
   return <>
     {
@@ -67,5 +93,9 @@ export default function Module1Page() {
     {key === 'key2' && <Page2 />}
     {key === 'key3' && <Page3 />}
     { key === 'key5' && <Page5/> }
+    {key === 'key6' && <Page6 />}
+    {key === 'key9' && <Page9 />}
+    {key === 'key10' && <Page9 />}
+    {key === 'key12' && <Page12 />}
   </>
 }

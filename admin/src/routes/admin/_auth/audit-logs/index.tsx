@@ -5,6 +5,7 @@ import { useState } from "react";
 import { businessApi, type AuditLogFilters, type AuditLogRow } from "@/api/business";
 import { useI18n } from "@/i18n";
 import { createTablePagination } from "@/utils/tablePagination";
+import { IpRegionDisplay } from "@/components/IpRegionDisplay";
 
 export const Route = createFileRoute("/admin/_auth/audit-logs/")({ component: AuditLogsPage });
 
@@ -13,7 +14,7 @@ export const Route = createFileRoute("/admin/_auth/audit-logs/")({ component: Au
 const AUDIT_ACTIONS = [
   "auth.login", "auth.password.change", "auth.logout", "users.create", "users.update", "users.delete", "users.batch",
   "blacklist.create", "blacklist.delete", "blacklist.batch", "mappings.create", "mappings.update", "mappings.delete", "mappings.batch",
-  "dictionary.update", "dictionary.batch", "templates.update", "templates.batch", "visitor_links.create", "visitors.delete", "visitors.batch", "visitors.export",
+  "dictionary.create", "dictionary.update", "dictionary.delete", "dictionary.batch", "templates.update", "templates.batch", "visitor_links.create", "visitors.delete", "visitors.batch", "visitors.export",
 ];
 
 function AuditLogsPage() {
@@ -53,7 +54,7 @@ function AuditLogsPage() {
           { title: t("audit.targetType"), dataIndex: "target_type", render: (value: string) => targetTypeLabel(value) },
           { title: t("audit.target"), render: (_: unknown, row: AuditLogRow) => row.target_ref || row.target_ids },
           { title: t("audit.targetUser"), dataIndex: "target_user_id", render: (value?: number) => operators.find((item) => Number(item.id) === value)?.username ?? "-" },
-          { title: t("audit.ip"), dataIndex: "request_ip" },
+          { title: t("audit.ip"), dataIndex: "request_ip", render: (ip: string) => <IpRegionDisplay ip={ip} /> },
           { title: t("audit.result"), dataIndex: "success", render: (value: boolean) => <Tag color={value ? "green" : "red"}>{value ? t("audit.success") : t("audit.failed")}</Tag> },
           { title: t("audit.error"), dataIndex: "error_message", render: (value?: string) => value || "-" },
           { title: t("audit.createdAt"), dataIndex: "created_at" },

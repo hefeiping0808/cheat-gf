@@ -78,6 +78,13 @@ type DataDictionaryRequest struct {
 	Label string `json:"label"`
 }
 
+// DataDictionaryCreateRequest 用字典 key 作为唯一标识，新增时同时创建展示名称。
+// 更新时间：2026-09-30 01:47:55 CST。
+type DataDictionaryCreateRequest struct {
+	Key   string `json:"key"`
+	Label string `json:"label"`
+}
+
 // BatchIDsRequest 是数据库表批量操作的统一请求格式。
 // 更新时间：2026-09-13 10:05:31 CST。
 type BatchIDsRequest struct {

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/gogf/gf/v2/net/ghttp"
 
@@ -40,14 +41,27 @@ func websocketHandler(r *ghttp.Request) {
 	defer service.ConnectionClosed()
 	defer ws.Close()
 	write := func(data []byte) { _ = ws.WriteMessage(ghttp.WsMsgText, data) }
-	// 2026-09-10 14:35:00 CST：App 握手时把归属用户和 item1 绑定到连接，后续只接收目标访客的导航指令。
-	// 触发场景：App 已完成 item1 填写后建立 WS；未填写 item1 的页面不得占用访客订阅。
-	// 维护注意：绑定条件来自已验证的用户 code 和请求中的 item1，Admin 指令必须同时匹配两者。
-	remove := service.SubscribeApp(owner["id"].Int64(), item1, write)
-	defer remove()
+	// 2026-09-30 10:28:56 CST：连接状态按访客唯一键更新，断开时只在最后一个对应 H5 连接关闭后标记离线。
+	// 触发场景：访客列表需要即时显示 H5 状态；连接状态锁避免并发重连与旧连接清理交错写反状态。
+	// 维护注意：visitor_key 保持题号语义；在线状态单独写 connection_status，心跳读取超时负责回收失联连接。
+	unlockState := service.LockAppConnectionState(module, owner["id"].Int64(), item1)
+	remove := service.SubscribeApp(module, owner["id"].Int64(), item1, write)
+	setVisitorConnectionStatus(module, owner["id"].Int64(), item1, "online")
+	unlockState()
+	defer func() {
+		unlockState := service.LockAppConnectionState(module, owner["id"].Int64(), item1)
+		remove()
+		if service.AppConnectionCount(module, owner["id"].Int64(), item1) == 0 {
+			setVisitorConnectionStatus(module, owner["id"].Int64(), item1, "offline")
+		}
+		unlockState()
+	}()
 	intro, _ := json.Marshal(map[string]any{"type": "connected", "module": module, "userId": owner["id"].Int64()})
 	write(intro)
-	_ = readWebSocketMessages(ws, nil)
+	lastHeartbeatKey := ""
+	_ = readWebSocketMessages(ws, func(data []byte) error {
+		return syncVisitorKeyFromHeartbeat(module, owner["id"].Int64(), item1, data, &lastHeartbeatKey)
+	})
 }
 
 func adminWebsocket(r *ghttp.Request) {
@@ -100,11 +114,71 @@ type webSocketMessageReader interface {
 	WriteMessage(messageType int, data []byte) error
 }
 
+type webSocketReadDeadliner interface {
+	SetReadDeadline(time.Time) error
+}
+
+// setVisitorConnectionStatus 仅在真实状态变化时写库并通知访客管理页，避免每次重连都制造无意义更新。
+// 更新时间：2026-09-30 10:28:56 CST。
+func setVisitorConnectionStatus(module string, userID int64, item1 string, status string) {
+	visitor, err := service.DB().Model("visitors").Where("module", module).Where("user_id", userID).Where("item1", item1).One()
+	if err != nil || visitor.IsEmpty() || visitor["connection_status"].String() == status {
+		return
+	}
+	if _, err = service.DB().Model("visitors").Where("id", visitor["id"].Int64()).Data(map[string]any{"connection_status": status}).Update(); err != nil {
+		return
+	}
+	service.PublishVisitor(userID, map[string]any{
+		"type": "visitor.connection.updated", "module": module, "visitorId": visitor["id"].Int64(),
+		"userId": userID, "item1": item1, "connectionStatus": status,
+	})
+}
+
+// syncVisitorKeyFromHeartbeat 将 H5 当前题号同步到已绑定的访客记录，忽略无效 key 和尚未创建的访客记录。
+// 更新时间：2026-10-02 01:00:38 CST。
+func syncVisitorKeyFromHeartbeat(module string, userID int64, item1 string, data []byte, lastHeartbeatKey *string) error {
+	var heartbeat struct {
+		Type string `json:"type"`
+		Key  string `json:"key"`
+	}
+	if err := json.Unmarshal(data, &heartbeat); err != nil || heartbeat.Type != "ping" {
+		return nil
+	}
+	key := service.NormalizeVisitorKey(heartbeat.Key)
+	if key == "" || key == *lastHeartbeatKey {
+		return nil
+	}
+	visitor, err := service.DB().Model("visitors").Where("module", module).Where("user_id", userID).Where("item1", item1).One()
+	if err != nil || visitor.IsEmpty() || service.NormalizeVisitorKey(visitor["visitor_key"].String()) == key {
+		if err == nil && !visitor.IsEmpty() {
+			*lastHeartbeatKey = key
+		}
+		return nil
+	}
+	if _, err = service.DB().Model("visitors").Where("id", visitor["id"].Int64()).Data(map[string]any{"visitor_key": key}).Update(); err != nil {
+		return nil
+	}
+	service.PublishVisitor(userID, map[string]any{
+		"type": "visitor.key.updated", "module": module, "key": key,
+		"visitorId": visitor["id"].Int64(), "userId": userID, "item1": item1,
+	})
+	*lastHeartbeatKey = key
+	return nil
+}
+
 // 2026-09-10 14:04:13 CST：App 和 Admin 共用应用层心跳处理，收到 ping 后立即返回 pong。
 // 触发场景：浏览器原生 WebSocket 无法由前端主动发送协议层 ping，需要业务消息维持连接活性。
 // 维护注意：业务推送仍按原订阅范围发送，心跳消息不得触发 Admin 的访客列表刷新。
 func readWebSocketMessages(ws webSocketMessageReader, handle func([]byte) error) error {
 	for {
+		// 2026-09-30 10:28:56 CST：服务端 60 秒未收到 H5/Admin 心跳即结束读取，避免网络半断开长期保留在线状态。
+		// 触发场景：浏览器被关闭、网络切换或客户端进程退出时，TCP 连接可能不会及时送达断开事件。
+		// 维护注意：前端当前每 20 秒发一次 ping；调整客户端心跳间隔时要同步评估该超时窗口。
+		if deadliner, ok := ws.(webSocketReadDeadliner); ok {
+			if err := deadliner.SetReadDeadline(time.Now().Add(60 * time.Second)); err != nil {
+				return err
+			}
+		}
 		messageType, data, err := ws.ReadMessage()
 		if err != nil {
 			return err
@@ -118,6 +192,11 @@ func readWebSocketMessages(ws webSocketMessageReader, handle func([]byte) error)
 		if json.Unmarshal(data, &message) == nil && message.Type == "ping" {
 			if err = ws.WriteMessage(ghttp.WsMsgText, []byte(`{"type":"pong"}`)); err != nil {
 				return err
+			}
+			if handle != nil {
+				if err = handle(data); err != nil {
+					return err
+				}
 			}
 			continue
 		}
@@ -171,7 +250,7 @@ func handleAdminCommand(ws webSocketMessageReader, data []byte, role string, cur
 	if _, err = service.DB().Model("visitors").Where("id", visitor["id"].Int64()).Data(map[string]any{"visitor_key": command.Key}).Update(); err != nil {
 		return writeAdminCommandResult(ws, command, false, "state_update_failed")
 	}
-	connected := service.PublishAppCommand(command.UserID, command.Item1, map[string]any{
+	connected := service.PublishAppCommand(command.Module, command.UserID, command.Item1, map[string]any{
 		"type":   "visitor.navigate",
 		"module": command.Module,
 		"key":    command.Key,

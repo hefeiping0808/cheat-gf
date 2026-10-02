@@ -20,6 +20,7 @@ export const APP_MENU_TREE: MenuItem[] = [
         kind: "item",
         name: "仪表盘",
         path: "/dashboard",
+        // 2026-09-29 22:18:20 CST：菜单图标标识需与 Sidebar 的 MENU_ICON_MAP 对应，新增或替换标识时同步维护两处。
         icon: "IconLucideLayoutDashboard",
         children: null,
         permissions: null,
@@ -44,7 +45,7 @@ export const APP_MENU_TREE: MenuItem[] = [
     kind: "item",
     name: "黑名单",
     path: "/blacklist",
-    icon: "IconLucideShield",
+    icon: "IconLucideBan",
     children: null,
     permissions: null,
     sort: 1,
@@ -67,7 +68,7 @@ export const APP_MENU_TREE: MenuItem[] = [
     kind: "item",
     name: "操作日志",
     path: "/audit-logs",
-    icon: "IconLucideHistory",
+    icon: "IconLucideAuditBook",
     children: null,
     permissions: ["audit:view"],
     sort: 3,
@@ -79,7 +80,7 @@ export const APP_MENU_TREE: MenuItem[] = [
     kind: "item",
     name: "系统管理",
     path: null,
-    icon: "IconLucideFolderKanban",
+    icon: "IconLucideGear",
     children: [
       {
         id: "5",
