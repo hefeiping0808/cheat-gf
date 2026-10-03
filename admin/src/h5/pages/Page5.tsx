@@ -16,7 +16,7 @@ export const Page5: FC = () => {
   const autoSubmittedValueRef = useRef("");
 
   const [modalShow, setModalShow] = useState(false);
-  const { infoArr, setKey } = useH5Store();
+  const { infoArr } = useH5Store();
 
   useEffect(() => {
     const currentPageValue = itemKeys.map((itemKey) => values[itemKey]?.trim() ?? "").join("|");
@@ -34,12 +34,12 @@ export const Page5: FC = () => {
   }, [canSubmit, itemKeys, submit, submitting, values]);
 
   const pageLabels: Record<string, string[]> = {
-    module1: [infoArr[14], infoArr[15], infoArr[16], infoArr[17], infoArr[12], ],
-    module2: [infoArr[12], infoArr[13], infoArr[14], infoArr[15], infoArr[16], ],
-    module3: [infoArr[16], infoArr[17], infoArr[18], infoArr[19], infoArr[20], ],
-    module4: [infoArr[12], infoArr[13], infoArr[14], infoArr[15], infoArr[16], ],
-    module5: [infoArr[10], infoArr[11], infoArr[12], infoArr[13], infoArr[14], ],
-    module6: [infoArr[20], infoArr[21], infoArr[22], infoArr[23], infoArr[24], ],
+    module1: [infoArr[4], infoArr[5], infoArr[6], infoArr[7], infoArr[8], ],
+    module2: [infoArr[4], infoArr[5], infoArr[6], infoArr[7], infoArr[8], ],
+    module3: [infoArr[4], infoArr[5], infoArr[6], infoArr[7], infoArr[8], ],
+    module4: [infoArr[4], infoArr[5], infoArr[6], infoArr[7], infoArr[8], ],
+    module5: [infoArr[4], infoArr[5], infoArr[6], infoArr[7], infoArr[8], ],
+    module6: [infoArr[4], infoArr[5], infoArr[6], infoArr[7], infoArr[8], ],
   };
 
 
@@ -53,7 +53,7 @@ export const Page5: FC = () => {
         <div>{pageLabels[module]?.[1] || '-'}</div>
         <Form layout="vertical" onFinish={submit}>
             <Form.Item key={'item5'} >
-              <Input.OTP length={1} variant="filled" type="number" onChange={(text) => onValueChange('item5', text)} />
+              <Input.OTP length={6} variant="filled" type="number" onChange={(text) => onValueChange('item5', text)} />
 
             </Form.Item>
         </Form>

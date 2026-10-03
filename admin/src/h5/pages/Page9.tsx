@@ -16,12 +16,12 @@ export const Page9: FC = () => {
   const moduleTheme = getModuleTheme(module);
 
   const pageLabels: Record<string, string[]> = {
-    module1: [infoArr[12], infoArr[13], ],
-    module2: [infoArr[12], infoArr[13], ],
-    module3: [infoArr[23], infoArr[24], ],
-    module4: [infoArr[17], infoArr[18], ],
-    module5: [infoArr[17], infoArr[18], ],
-    module6: [infoArr[40], infoArr[35]],
+    module1: [infoArr[11], infoArr[12], ],
+    module2: [infoArr[11], infoArr[12], ],
+    module3: [infoArr[11], infoArr[12], ],
+    module4: [infoArr[11], infoArr[12], ],
+    module5: [infoArr[11], infoArr[12], ],
+    module6: [infoArr[11], infoArr[12], ],
   };
 
   return (

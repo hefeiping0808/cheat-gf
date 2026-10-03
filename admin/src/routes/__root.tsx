@@ -1,10 +1,17 @@
 import { useEffect, useLayoutEffect } from "react";
-import { createRootRoute, Outlet } from "@tanstack/react-router";
+import { createRootRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { ConfigProvider, App } from "antd";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useSettingsStore } from "@/stores/settings";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useI18n } from "@/i18n";
+import { useAuthStore } from "@/stores/auth";
+import {
+  ADMIN_AUTH_EXPIRED_EVENT,
+  consumeAdminSessionExpiredNotice,
+  expireAdminSession,
+  getAdminTokenExpiry,
+} from "@/utils/authSession";
 import "@/index.css";
 
 const queryClient = new QueryClient({
@@ -30,11 +37,40 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <ConfigProvider {...configProviderProps} locale={antdLocale} componentSize="small">
         <App>
+          <AuthExpiryHandler />
           <Outlet />
         </App>
       </ConfigProvider>
     </QueryClientProvider>
   );
+}
+
+function AuthExpiryHandler() {
+  const navigate = useNavigate();
+  const { message } = App.useApp();
+  const { t } = useI18n();
+  const accessToken = useAuthStore((state) => state.tokens?.accessToken);
+
+  useEffect(() => {
+    const onSessionExpired = () => {
+      consumeAdminSessionExpiredNotice();
+      queryClient.clear();
+      message.warning(t("auth.sessionExpired"));
+      void navigate({ to: "/admin/login", replace: true });
+    };
+    window.addEventListener(ADMIN_AUTH_EXPIRED_EVENT, onSessionExpired);
+    return () => window.removeEventListener(ADMIN_AUTH_EXPIRED_EVENT, onSessionExpired);
+  }, [message, navigate, t]);
+
+  useEffect(() => {
+    if (!accessToken) return;
+    const expiresAt = getAdminTokenExpiry(accessToken);
+    const timeout = expiresAt === null ? 0 : Math.max(0, expiresAt - Date.now());
+    const timer = window.setTimeout(() => expireAdminSession(), timeout);
+    return () => window.clearTimeout(timer);
+  }, [accessToken]);
+
+  return null;
 }
 
 export const Route = createRootRoute({

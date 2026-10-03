@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { App, Button, Card, Form, Input, Modal, Popconfirm, Space, Table, Typography } from "antd";
+import { App, Button, Card, Form, Input, Modal, Popconfirm, Space, Table, Typography, Upload, type UploadProps } from "antd";
 import { useState, type Key } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { businessApi, type DataDictionaryRow } from "@/api/business";
@@ -7,6 +7,7 @@ import { httpClient } from "@/utils/http";
 import { useI18n } from "@/i18n";
 import { createTablePagination } from "@/utils/tablePagination";
 import { BatchActionBar } from "@/components/BatchActionBar";
+import { downloadTxt, parseTxt, serializeTxt } from "@/utils/txtTransfer";
 
 export const Route = createFileRoute("/admin/_auth/dictionary/")({ component: DictionaryPage });
 
@@ -19,6 +20,7 @@ function DictionaryPage() {
   const [bulkOpen, setBulkOpen] = useState(false);
   const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
   const [pagination, setPagination] = useState({ page: 1, pageSize: 10 });
+  const [exporting, setExporting] = useState(false);
   const [form] = Form.useForm<{ key: string; label: string }>();
   const [bulkForm] = Form.useForm<Record<string, string>>();
   const query = useQuery({ queryKey: ["dictionary", pagination.page, pagination.pageSize], queryFn: () => businessApi.dictionary(pagination.page, pagination.pageSize) });
@@ -66,6 +68,28 @@ function DictionaryPage() {
     onSuccess: () => { message.success(t("batch.success")); setBulkOpen(false); bulkForm.resetFields(); setSelectedRowKeys([]); void client.invalidateQueries({ queryKey: ["dictionary"] }); },
     onError: (error) => message.error(errorMessage(error)),
   });
+  const importTxt = useMutation({ mutationFn: businessApi.importDictionary, onSuccess: (result) => { message.success(t("dictionary.imported", { count: result.imported })); void client.invalidateQueries({ queryKey: ["dictionary"] }); } });
+  const exportTxt = async () => {
+    setExporting(true);
+    try {
+      const { entries } = await businessApi.exportDictionary();
+      downloadTxt("data-dictionary.txt", serializeTxt(["key", "label"], entries.map((entry) => [entry.key, entry.label])));
+    } catch (error) {
+      message.error(errorMessage(error));
+    } finally {
+      setExporting(false);
+    }
+  };
+  const handleImport: UploadProps["beforeUpload"] = async (file) => {
+    try {
+      if (file.size > 2 * 1024 * 1024) throw new Error(t("common.txtTooLarge"));
+      const rows = parseTxt(await file.text(), ["key", "label"]);
+      await importTxt.mutateAsync(rows.map(([key, label]) => ({ key, label })));
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : errorMessage(error));
+    }
+    return Upload.LIST_IGNORE;
+  };
   const edit = (row: DataDictionaryRow) => {
     setEditing(row);
     form.setFieldsValue({ key: row.key, label: row.label });
@@ -88,8 +112,9 @@ function DictionaryPage() {
   };
 
   return (
-    <Card title={t("dictionary.title")} extra={<Button type="primary" onClick={openCreate}>{t("dictionary.add")}</Button>}>
+    <Card title={t("dictionary.title")} extra={<Space><Button onClick={() => void exportTxt()} loading={exporting}>{t("dictionary.export")}</Button><Upload accept=".txt,text/plain" showUploadList={false} beforeUpload={handleImport}><Button loading={importTxt.isPending}>{t("dictionary.import")}</Button></Upload><Button type="primary" onClick={openCreate}>{t("dictionary.add")}</Button></Space>}>
       <Typography.Paragraph type="secondary">{t("dictionary.description")}</Typography.Paragraph>
+      <Typography.Paragraph type="secondary">{t("dictionary.txtHelp")}</Typography.Paragraph>
       <Table
         rowKey="key"
         rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys }}

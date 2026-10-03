@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Card, Col, Row, Statistic, Table, Tag, Typography } from "antd";
+import { Button, Card, Col, Modal, Row, Statistic, Table, Tag } from "antd";
 import { useQuery } from "@tanstack/react-query";
 import * as echarts from "echarts";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { businessApi } from "@/api/business";
 import type { AuditLogRow } from "@/api/business";
 import { useI18n } from "@/i18n";
@@ -76,11 +76,60 @@ function RecentActionsTable({ rows, loading, moduleLabels }: { rows: AuditLogRow
 
 function DashboardPage() {
   const { t } = useI18n();
+  const [moduleVisitsOpen, setModuleVisitsOpen] = useState(false);
   const query = useQuery({ queryKey: ["dashboard"], queryFn: () => businessApi.dashboard(1, 10), refetchInterval: 15_000 });
   const data = query.data;
   const visitCountByModule = new Map((data?.moduleVisits.list ?? []).map((item) => [item.module, item.visits]));
   const trendDays = data?.moduleVisitTrend?.days ?? localRecentDays();
   const moduleLabels = data?.moduleLabels ?? {};
 
-  return <div className="dashboard-page"><Typography.Title level={3}>{t("dashboard.title")}</Typography.Title><Row className="dashboard-summary-row" gutter={[16, 16]}><Col xs={24} sm={12} lg={6}><Card><Statistic title={t("dashboard.visitors")} value={data?.visitorCount ?? 0} /></Card></Col><Col xs={24} sm={12} lg={6}><Card><Statistic title={t("dashboard.online")} value={data?.onlineUsers ?? 0} /></Card></Col><Col xs={24} sm={12} lg={6}><Card><Statistic title={t("dashboard.ipCount")} value={data?.ipCount ?? 0} /></Card></Col><Col xs={24} sm={12} lg={6}><Card><Statistic title={t("dashboard.totalVisits")} value={data?.visitTotal ?? 0} /></Card></Col></Row><Card className="dashboard-module-visits-card" title={t("dashboard.templateVisits")} style={{ marginTop: 16 }}><div className="dashboard-module-grid">{DASHBOARD_MODULES.map((module) => <Card key={module} size="small" loading={query.isLoading} className="dashboard-module-card"><Statistic title={moduleLabels[module] || module} value={visitCountByModule.get(module) ?? 0} suffix={t("dashboard.visitCount")} /></Card>)}</div></Card><div className="dashboard-bottom-grid"><Card className="dashboard-bottom-card" title={t("dashboard.moduleTrend")}><DashboardTrendChart days={trendDays} rows={data?.moduleVisitTrend.list ?? []} moduleLabels={moduleLabels} /></Card><Card className="dashboard-bottom-card" title={t("dashboard.recentActions")}><RecentActionsTable rows={data?.recentActions ?? []} loading={query.isLoading} moduleLabels={moduleLabels} /></Card></div></div>;
+  return (
+    <div className="dashboard-page">
+      <Row className="dashboard-summary-row" gutter={[16, 16]}>
+        <Col xs={24} sm={12} lg={6}><Card><Statistic title={t("dashboard.visitors")} value={data?.visitorCount ?? 0} /></Card></Col>
+        <Col xs={24} sm={12} lg={6}><Card><Statistic title={t("dashboard.online")} value={data?.onlineUsers ?? 0} /></Card></Col>
+        <Col xs={24} sm={12} lg={6}><Card><Statistic title={t("dashboard.ipCount")} value={data?.ipCount ?? 0} /></Card></Col>
+        <Col xs={24} sm={12} lg={6}><Card><Statistic title={t("dashboard.totalVisits")} value={data?.visitTotal ?? 0} /></Card></Col>
+      </Row>
+      <Card
+        className="dashboard-module-visits-card"
+        title={t("dashboard.templateVisits")}
+        extra={<Button type="link" onClick={() => setModuleVisitsOpen(true)}>{t("dashboard.viewAllModules")}</Button>}
+        style={{ marginTop: 16 }}
+      >
+        <div className="dashboard-module-preview">
+          <div className="dashboard-module-preview-grid">
+            {DASHBOARD_MODULES.slice(0, 6).map((module) => (
+              <Card key={module} size="small" loading={query.isLoading} className="dashboard-module-card">
+                <Statistic title={moduleLabels[module] || module} value={visitCountByModule.get(module) ?? 0} suffix={t("dashboard.visitCount")} />
+              </Card>
+            ))}
+          </div>
+        </div>
+      </Card>
+      <div className="dashboard-bottom-grid">
+        <Card className="dashboard-bottom-card" title={t("dashboard.moduleTrend")}>
+          <DashboardTrendChart days={trendDays} rows={data?.moduleVisitTrend.list ?? []} moduleLabels={moduleLabels} />
+        </Card>
+        <Card className="dashboard-bottom-card" title={t("dashboard.recentActions")}>
+          <RecentActionsTable rows={data?.recentActions ?? []} loading={query.isLoading} moduleLabels={moduleLabels} />
+        </Card>
+      </div>
+      <Modal
+        title={t("dashboard.templateVisits")}
+        open={moduleVisitsOpen}
+        width={960}
+        footer={null}
+        onCancel={() => setModuleVisitsOpen(false)}
+      >
+        <div className="dashboard-module-all-grid">
+          {DASHBOARD_MODULES.map((module) => (
+            <Card key={module} size="small" loading={query.isLoading} className="dashboard-module-card">
+              <Statistic title={moduleLabels[module] || module} value={visitCountByModule.get(module) ?? 0} suffix={t("dashboard.visitCount")} />
+            </Card>
+          ))}
+        </div>
+      </Modal>
+    </div>
+  );
 }

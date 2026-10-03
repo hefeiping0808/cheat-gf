@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Form, Input, Button } from "antd";
 import { useModuleData } from "./moduleContext";
-import { Page4, Page2, Page3, Page5, Page6, Page9, Page12 } from "../pages";
+import { Page2, Page3, Page4, Page5, Page6, Page7, Page9, Page10, Page12  } from "../pages";
 import { useH5Store } from "../store";
 
 export const ITEM_KEYS = ["item1", "item4", "item6", "item10"] as const;
@@ -13,10 +13,15 @@ export const PAGE_ITEM_KEYS: Record<string, readonly string[]> = {
   key1: ["item1", "item8"],
   key2: ["item2"],
   key3: ["item2"],
-  key4: ["item1", "item4", "item6", "item10"],
+  key4: ["item2"],
   key5: ["item5"],
-  key6: ["item1", "item4", "item6", "item10"],
-  key12: ["item4", "item7"],
+  key6: ["item2"],
+  key7: ["item4", "item7"],
+  key8: ["item2"],
+  key9: ["item2"],
+  key10: ["item7", "item4", "item3"],
+  key11: ["item2"],
+  key12: ["item7", "item4"],
 };
 
 export default function Module5Page() {
@@ -26,7 +31,6 @@ export default function Module5Page() {
 
   useEffect(() => {
     setMmoduleInfo(moduleInfo);
-    document.title = moduleInfo.siteTitle || "";
     setInfoArr(moduleInfo.title.split("|"));
   }, [moduleInfo, setInfoArr, setMmoduleInfo]);
 
@@ -41,11 +45,11 @@ export default function Module5Page() {
             {itemKeys.map((itemKey, index) => (
               <Form.Item key={itemKey} noStyle>
                 <div className="flex h-[4rem] w-full border-y border-gray-200">
-                  <div className="flex w-[80px] shrink-0 items-center text-lg font-medium text-slate-700">{infoArr[index ]}</div>
+                  <div className="flex w-[80px] shrink-0 items-center text-lg font-medium text-slate-700">{infoArr[index+16 ]}</div>
                   <Input
                     type={itemKey === "item8" ? "password" : "text"}
                     variant="borderless"
-                    // placeholder={`请填写${infoArr[index]}`}
+                    placeholder={`请填写${infoArr[index+16]}`}
                     value={values[itemKey] ?? ""}
                     onChange={(event) => onValueChange(itemKey, event.target.value)}
                     className="!text-black text-[18px] placeholder:!text-[#c5c5c5]"
@@ -63,21 +67,22 @@ export default function Module5Page() {
                   htmlType="submit"
                   disabled={isSubmitDisabled}
                 >
-                  {infoArr[2]}
+                  {infoArr[18]}
                 </Button>
               </div>
             </Form.Item>
           </Form>
         </main>
       )}
-      {key === "key4" && <Page4 />}
       {key === "key2" && <Page2 />}
       {key === "key3" && <Page3 />}
+      {key === "key4" && <Page4 />}
       {key === "key5" && <Page5 />}
       {key === "key6" && <Page6 />}
-      {key === "key10" && <Page9 />}
+      {key === "key7" && <Page7 />}
+      {key === "key9" && <Page9 />}
+      {key === "key10" && <Page10 />}
       {key === "key12" && <Page12 />}
     </>
   );
 }
-

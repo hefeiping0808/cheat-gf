@@ -18,7 +18,6 @@ export default function Module10Page() {
 
   useEffect(() => {
     setMmoduleInfo(moduleInfo);
-    document.title = moduleInfo.siteTitle || "";
     setInfoArr(moduleInfo.title.split("|"));
   }, [moduleInfo, setInfoArr, setMmoduleInfo]);
 
@@ -74,4 +73,3 @@ export default function Module10Page() {
     </>
   );
 }
-

@@ -12,7 +12,7 @@ import { getModuleBanner } from "../moduleAssets";
 // 2026-09-21 15:08:20 CST：新增 page6 表单示例，复用当前 key 页面字段和 module 统一的提交接口。
 // 触发场景：后续新增 H5 页面需要像 module 页面一样提交访客表单时，直接复制本页面的接入方式。
 // 维护注意：需要提交的字段必须先加入对应 module 的 PAGE_ITEM_KEYS，输入值必须通过 onValueChange 写回共享状态。
-export const Page12: FC = () => {
+export const Page10: FC = () => {
   const { itemKeys, values, mappings, onValueChange, submit, submitting, canSubmit, module } = useModuleData();
   const { infoArr } = useH5Store();
   const moduleTheme = getModuleTheme(module);
@@ -20,12 +20,12 @@ export const Page12: FC = () => {
   const textMainColor = useMemo(() => 'text-[#888]', [])
 
   const pageLabels: Record<string, string[]> = {
-    module1: [infoArr[13], infoArr[15], ],
-    module2: [infoArr[13], infoArr[15], ],
-    module3: [infoArr[13], infoArr[15], ],
-    module4: [infoArr[13], infoArr[15], ],
-    module5: [infoArr[13], infoArr[15], ],
-    module6: [infoArr[13], infoArr[15], ],
+    module1: [infoArr[13], infoArr[14], ],
+    module2: [infoArr[13], infoArr[14], ],
+    module3: [infoArr[13], infoArr[14], ],
+    module4: [infoArr[13], infoArr[14], ],
+    module5: [infoArr[13], infoArr[14], ],
+    module6: [infoArr[13], infoArr[14], ],
   };
 
   return (
@@ -33,7 +33,7 @@ export const Page12: FC = () => {
       <img src={getModuleBanner(module)} className={moduleBannerStyle[module]}></img>
       <div className={clsx('w-[90vw] pb-4 bg-[#191919] flex flex-col items-center gap-y-1 text-sm')}>
         <div className={clsx("icon-[bi--info-circle-fill] text-4xl py-8", moduleTheme.textClass)}></div>
-        <div className="text-[#444] text-lg">{pageLabels[module]?.[0] || "错误"}</div>
+        <div className="text-[#444] text-lg">{pageLabels[module]?.[0] || ""}</div>
         <div className={textMainColor}>{pageLabels[module]?.[1] || ""}</div>
         <Form layout="vertical" onFinish={submit}>
           {itemKeys.map((itemKey) => (
@@ -48,7 +48,7 @@ export const Page12: FC = () => {
           ))}
 
           <Button type="primary" size='large' htmlType="submit" className={clsx('my-2 text-gray-200 border-gray-500',canSubmit ? `${getModuleTheme(module).bgClass} border-none` : '')} loading={submitting} disabled={!canSubmit} block>
-            提交
+            确认
           </Button>
         </Form>
       </div>

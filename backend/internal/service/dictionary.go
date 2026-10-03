@@ -211,3 +211,34 @@ return 1
 	}
 	return nil
 }
+
+// UpsertDataDictionaryBatch 校验并原子合并一批字典配置，已有 key 更新 label，新 key 创建，不触碰未提交的 key。
+// 触发场景：管理员导入数据字典 TXT；维护时继续通过 Lua 一次写入，避免文件导入过程中出现半份配置。
+// 更新时间：2026-10-02 15:14:19 CST。
+func UpsertDataDictionaryBatch(ctx context.Context, updates map[string]string) error {
+	if len(updates) == 0 || len(updates) > 2000 {
+		return fmt.Errorf("invalid data dictionary import count")
+	}
+	args := make([]any, 0, len(updates)*2)
+	for key, label := range updates {
+		key = strings.TrimSpace(key)
+		label = strings.TrimSpace(label)
+		if !IsDataDictionaryKey(key) || label == "" || len(label) > 255 {
+			return fmt.Errorf("invalid data dictionary value for %s", key)
+		}
+		args = append(args, key, label)
+	}
+	if err := EnsureDataDictionary(ctx); err != nil {
+		return err
+	}
+	const importScript = `
+for i = 1, #ARGV, 2 do
+	redis.call('HSET', KEYS[1], ARGV[i], ARGV[i + 1])
+end
+return #ARGV / 2
+`
+	if _, err := redisClient.Eval(ctx, importScript, []string{dataDictionaryRedisKey}, args...).Int(); err != nil {
+		return fmt.Errorf("import data dictionary failed: %w", err)
+	}
+	return nil
+}

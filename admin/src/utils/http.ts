@@ -1,4 +1,6 @@
 import { API_BASE_URL } from "./constants";
+import { AUTH_ENDPOINTS } from "@/api/auth";
+import { expireAdminSession } from "@/utils/authSession";
 
 export class ApiError extends Error {
   code: number | string;
@@ -11,10 +13,12 @@ export class ApiError extends Error {
 
 export class HttpError extends Error {
   status: number;
-  constructor(status: number, message: string) {
+  responseMessage: string;
+  constructor(status: number, message: string, responseMessage = "") {
     super(message);
     this.name = "HttpError";
     this.status = status;
+    this.responseMessage = responseMessage;
   }
 }
 
@@ -68,14 +72,32 @@ async function request<T>(
     ...options,
   });
 
+  // 2026-10-03 00:53:15 CST：后台 API 的 401 统一清除管理员认证并通知路由层返回登录页。
+  // 触发场景：token 已失效或后台拒绝当前会话；登录接口 401 代表账号凭据错误，必须保留在登录页展示接口 message。
+  if (res.status === 401 && path !== AUTH_ENDPOINTS.login) expireAdminSession();
+
   if (!res.ok) {
-    const errorBody = (await res.json().catch(() => null)) as
-      | { code?: number | string; message?: string }
-      | null;
+    // 2026-10-02 17:00:13 CST：先读取一次错误响应正文，再兼容 JSON 和 text/plain，避免 401 等错误丢失后端提示。
+    // 触发场景：认证失败或反向代理返回非 JSON 错误；维护时不要再次消费 response body，也不要把 HTML 错误页直接展示给用户。
+    const bodyText = await res.text().catch(() => "");
+    let errorBody: { code?: number | string; message?: string } | null = null;
+    if (bodyText) {
+      try {
+        errorBody = JSON.parse(bodyText) as { code?: number | string; message?: string };
+      } catch {
+        // text/plain 响应由下面的回退分支处理。
+      }
+    }
     if (errorBody?.code !== undefined) {
       throw new ApiError(errorBody.code, errorBody.message ?? String(errorBody.code));
     }
-    throw new HttpError(res.status, `HTTP ${res.status}: ${res.statusText}`);
+    const responseMessage = errorBody?.message?.trim()
+      || (res.headers.get("content-type")?.toLowerCase().includes("text/plain") ? bodyText.trim() : "");
+    throw new HttpError(
+      res.status,
+      responseMessage || `HTTP ${res.status}: ${res.statusText}`,
+      responseMessage,
+    );
   }
 
   const json = await res.json();

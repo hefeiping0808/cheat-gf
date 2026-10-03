@@ -1,12 +1,9 @@
 import { Flex, Typography, theme } from "antd";
-import { GitHub } from "@/components/Icon";
 import { useI18n } from "@/i18n";
-
-const ANTD_ADMIN_REPO = "https://github.com/zuiidea/antd-admin";
+import { APP_VERSION } from "@/utils/constants";
 
 export function AppFooter() {
   const { token } = theme.useToken();
-  const iconSize = Math.max(12, Math.round(Number(token.fontSizeSM)));
   const { t } = useI18n();
 
   return (
@@ -20,22 +17,8 @@ export function AppFooter() {
       }}
     >
       <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM, marginBottom: 0 }}>
-        {t("footer.poweredBy")}
+        {t("footer.version", { version: APP_VERSION })}
       </Typography.Text>
-      <a
-        href={ANTD_ADMIN_REPO}
-        target="_blank"
-        rel="noopener noreferrer"
-        style={{
-          color: token.colorLink,
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 4,
-        }}
-      >
-        <GitHub size={iconSize} />
-        antd-admin
-      </a>
     </Flex>
   );
 }

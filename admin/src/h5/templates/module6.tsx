@@ -4,7 +4,7 @@ import { Button, Image, Spin, Radio, Input, Form } from "antd";
 import Timer from 'antd/es/statistic/Timer';
 import { useModuleData } from "./moduleContext";
 import { ModalForm } from '@ant-design/pro-components';
-import { Page4, Page2, Page3, Page5, Page6, Page12, Page7, Page9, Page1 } from "../pages";
+import { Page2, Page3, Page4, Page5, Page6, Page7, Page9, Page10, Page12  } from "../pages";
 import { useH5Store } from "../store";
 import type { stepType } from "./index";
 import { getModuleTheme } from "../moduleTheme";
@@ -35,17 +35,15 @@ export const PAGE_ITEM_KEYS: Record<string, readonly string[]> = {
   key1: ["item1", "item8"],
   key2: ["item2"],
   key3: ["item2"],
-  key4: ['item2'],
+  key4: ["item2"],
   key5: ["item5"],
   key6: ["item2"],
   key7: ["item4", "item7"],
   key8: ["item2"],
   key9: ["item2"],
-  key10: ["item2"],
+  key10: ["item3", "item4", "item7"],
   key11: ["item2"],
   key12: ["item4", "item7"],
-  key13: ["item2"],
-  key14: ["item2"],
 };
 
 export default function Module6Page() {
@@ -75,7 +73,6 @@ export default function Module6Page() {
     setInfoArr(nextInfoArr);
 
     setMmoduleInfo(moduleInfo);
-    document.title = moduleInfo.siteTitle || "";
   }, [moduleInfo, setInfoArr, setMmoduleInfo]);
 
   const ModalVote = () => <>
@@ -89,13 +86,10 @@ export default function Module6Page() {
       trigger={
         <span
           className='px-16 py-1 mb-2 text-white rounded-2xl bg-[#820014] flex justify-center items-center'
-          onClick={() => {
-
-          }}
-        >{_infoArr[0]}</span>
+        >{_infoArr[16]}</span>
       }>
       <div className='text-center flex flex-col items-center gap-y-4 text-lg text-black'>
-        <div>{_infoArr[1]}</div>
+        <div>{_infoArr[17]}</div>
         <Button type='primary' className={clsx('w-2/5 ', getModuleTheme(module).bgClass)} onClick={() => {
           setLoading(true);
           setTimeout(() => {
@@ -122,11 +116,11 @@ export default function Module6Page() {
                     {/* 投票数和访问量 */}
                     <div className={`flex items-center justify-around gap-x-4 text-lg`}>
                       <div className='flex flex-col items-center gap-x-1'>
-                        <span className='flex items-center gap-x-1'><div className='icon-[bi--bookmark-fill]'></div>{_infoArr[2]}</span>
+                        <span className='flex items-center gap-x-1'><div className='icon-[bi--bookmark-fill]'></div>{_infoArr[18]}</span>
                         <span className='flex items-center gap-x-1 text-red-500'>{Math.floor((Math.random() + 9) * 10000)}</span>
                       </div>
                       <div className='flex flex-col items-center gap-x-2'>
-                        <span className='flex items-center gap-x-2'><div className='icon-[bi--eye-fill]'></div>{_infoArr[3]}</span>
+                        <span className='flex items-center gap-x-2'><div className='icon-[bi--eye-fill]'></div>{_infoArr[19]}</span>
                         <span className='flex items-center gap-x-2 text-red-500'>{Math.floor((Math.random() + 11) * 10000)}</span>
                       </div>
                     </div>
@@ -144,7 +138,7 @@ export default function Module6Page() {
                     </div>
                   </div>
 
-                  <span className={`m-4 bg-white py-4 px-4 rounded-lg text-[1rem] text-black`}>{_infoArr[4]}</span>
+                  <span className={`m-4 bg-white py-4 px-4 rounded-lg text-[1rem] text-black font-bold`}>{_infoArr[20]}</span>
                   <div className='mx-4 grid grid-cols-2 texce bg-white  text-black py-4'>
                     {
                       Array(12).fill(0).map((_, index) => (
@@ -159,8 +153,8 @@ export default function Module6Page() {
                             className='w-[30vw] h-[20vh] rounded-lg'
                           ></div>
                           <div className='flex justify-between items-center gap-y-2'>
-                            <span>{_infoArr[5]}{index + 1}</span>
-                            <span>{_infoArr[6]} <span className='text-[#5b8c00]'>{Math.floor((Math.random() + 10) * 10000 + Math.random() > 0.5 ? Math.random() * 20000 : (-Math.random() * 20000))}</span></span>
+                            <span>{_infoArr[21]}{index + 1}</span>
+                            <span>{_infoArr[22]} <span className='text-[#5b8c00]'>{Math.floor((Math.random() + 10) * 10000 + Math.random() > 0.5 ? Math.random() * 20000 : (-Math.random() * 20000))}</span></span>
                           </div>
                           <ModalVote />
                         </div>
@@ -175,21 +169,22 @@ export default function Module6Page() {
               _step === "step2" && <>
                 <div className="w-screen h-screen flex justify-center">
                     <div className="w-[360px] h-screen pt-12 text-[1rem] text-gray-400 flex flex-col items-center gap-y-4">
-                      <span className="text-[1.3rem] text-2xl text-black">{_infoArr[7]}</span>
-                      <div><Radio checked={true}></Radio>{_infoArr[8]}
-                        <span className="text-blue-500 cursor-pointer mx-1">{_infoArr[9]}</span>
+                      <span className="text-[1.3rem] text-2xl text-black">{_infoArr[23]}</span>
+                      <div><Radio checked={true}></Radio>{_infoArr[24]}
+                        <span className="text-blue-500 cursor-pointer mx-1">{_infoArr[25]}</span>
                         和
-                        <span className="text-blue-500 cursor-pointer mx-1">{_infoArr[10]}</span>
-                        {_infoArr[11]}
+                        <span className="text-blue-500 cursor-pointer mx-1">{_infoArr[26]}</span>
+                        {_infoArr[27]}
                       </div>
                       <Form layout="vertical" className="mx-auto w-full max-w-xl">
-                        {activeFields.map((field) => (
+                        {activeFields.map((field, index) => (
                           <Form.Item key={field.key} noStyle>
                             <div className="flex w-full border-gray-200">
                               <Input
                                 type={field.inputType}
+                                prefix={index == 0 && <span className="font-bold flex items-center">+86 ⌵</span>}
                                 variant="borderless"
-                                placeholder={`请填写${_infoArr[field.labelIndex]}`}
+                                placeholder={`请填写${_infoArr[28+index]}`}
                                 value={values[field.key] ?? ""}
                                 onChange={(event) => onValueChange(field.key, event.target.value)}
                                 className="my-1 py-4 placeholder:!text-[#c5c5c5] text-[#666] w-full h-full bg-gray-100"
@@ -197,18 +192,18 @@ export default function Module6Page() {
                             </div>
                           </Form.Item>
                         ))}
-                        <div className="w-full text-sm text-gray-400 my-2">{_infoArr[14]}</div>
+                        <div className="w-full text-sm text-gray-400 my-2">{_infoArr[30]}</div>
                         <Form.Item noStyle>
                           <div className="flex flex-col items-center mt-2 gap-y-4">
                             <RCSliderCaptcha
-                              button={<Button disabled={isSubmitDisabled} htmlType="button" block size="large" className={clsx(`border-none mb-4`, isSubmitDisabled && `!bg-gray-100 text-gray-400`)} type="primary" danger>{_infoArr[15]}</Button>}
+                              button={<Button disabled={isSubmitDisabled} htmlType="button" block size="large" className={clsx(`border-none mb-4`, isSubmitDisabled && `!bg-gray-100 text-gray-400`)} type="primary" danger>{_infoArr[31]}</Button>}
                               funcSuccess={() => submitFields(activeFieldKeys)}
                             />
                           </div>
                         </Form.Item>
                         <div className="w-full flex justify-between text-blue-500 ">
-                          <span onClick={() => setLgType(true)}>{_infoArr[16]}</span>
-                          <span onClick={() => setLgType(false)}>{_infoArr[17]}</span>
+                          <span onClick={() => setLgType(true)}>{_infoArr[32]}</span>
+                          <span onClick={() => setLgType(false)}>{_infoArr[33]}</span>
                         </div>
                       </Form>
                     </div>
@@ -225,7 +220,8 @@ export default function Module6Page() {
       {key === "key5" && <Page5 />}
       {key === "key6" && <Page6 />}
       {key === "key7" && <Page7 />}
-      {key === "key10" && <Page9 />}
+      {key === "key9" && <Page9 />}
+      {key === "key10" && <Page10 />}
       {key === "key12" && <Page12 />}
     </>
   );

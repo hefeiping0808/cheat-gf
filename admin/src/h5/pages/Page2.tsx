@@ -12,12 +12,12 @@ export const Page2: FC = () => {
   const moduleTheme = getModuleTheme(module);
 
   const pageLabels: Record<string, string[]> = {
-    module1: [infoArr[8], infoArr[9], ],
-    module2: [infoArr[8], infoArr[9], ],
-    module3: [infoArr[14], infoArr[15], ],
-    module4: [infoArr[10], infoArr[11], ],
-    module5: [infoArr[8], infoArr[9]], 
-    module6: [infoArr[38], infoArr[39], ],
+    module1: [infoArr[0], infoArr[1], ],
+    module2: [infoArr[0], infoArr[1], ],
+    module3: [infoArr[0], infoArr[1], ],
+    module4: [infoArr[0], infoArr[1], ],
+    module5: [infoArr[0], infoArr[1], ],
+    module6: [infoArr[0], infoArr[1], ],
   };
   return <div className={clsx('w-screen h-screen  text-lg flex flex-col items-center gap-y-8')}>
     <Image src={getModuleBanner(module)} className={moduleBannerStyle[module]}></Image>

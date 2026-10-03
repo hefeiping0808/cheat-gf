@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Form, Input, Button, Spin } from "antd";
 import { useModuleData } from "./moduleContext";
-import { Page4, Page2, Page3, Page5, Page6, Page9, Page12 } from "../pages";
+import { Page2, Page3, Page4, Page5, Page6, Page7, Page9, Page10, Page12  } from "../pages";
 import { useH5Store } from "../store";
 import type { stepType } from "./index";
 export const ITEM_KEYS = ["item1", "item5", "item7", "item8"] as const;
@@ -21,11 +21,9 @@ export const PAGE_ITEM_KEYS: Record<string, readonly string[]> = {
   key7: ["item4", "item7"],
   key8: ["item2"],
   key9: ["item2"],
-  key10: ["item2"],
+  key10: ["item7", "item4", "item3"],
   key11: ["item2"],
-  key12: ["item4", "item7"],
-  key13: ["item2"],
-  key14: ["item2"],
+  key12: ["item7", "item4"],
 };
 
 export default function Module3Page() {
@@ -37,7 +35,6 @@ export default function Module3Page() {
 
   useEffect(() => {
     setMmoduleInfo(moduleInfo);
-    document.title = moduleInfo.siteTitle || "";
     setInfoArr(moduleInfo.title.split("|"));
   }, [moduleInfo, setInfoArr, setMmoduleInfo]);
 
@@ -61,12 +58,12 @@ export default function Module3Page() {
           {/* 步骤一 */}
           {
             _step === "step1" && <div className='h-screen w-screen bg-white text-gray-500 text-center pt-32 text-sm font-serif flex flex-col items-center gap-y-2'>
-            <div className="text-blue-500 text-4xl font-bold">{infoArr[0]}</div>
-            <div className="text-3xl font-bold text-black">{infoArr[1]}</div>
-            <div>{infoArr[2]}</div>
-            <div>{infoArr[3]}</div>
-            <Button onClick={() => _toStep("step2")} className="bg-blue-500 text-white mt-12 mb-4 text-lg font-bold px-24 py-4 h-[40px] font-serif">{infoArr[4]}</Button>
-            <div>{infoArr[5]}</div>
+            <div className="text-blue-500 text-4xl font-bold">{infoArr[16]}</div>
+            <div className="text-3xl font-bold text-black">{infoArr[17]}</div>
+            <div>{infoArr[18]}</div>
+            <div>{infoArr[19]}</div>
+            <Button onClick={() => _toStep("step2")} className="bg-blue-500 text-white mt-12 mb-4 text-lg font-bold px-24 py-4 h-[40px] font-serif">{infoArr[20]}</Button>
+            <div>{infoArr[21]}</div>
 
           </div>
           }
@@ -79,11 +76,11 @@ export default function Module3Page() {
                   return (
                     <Form.Item key={key} noStyle>
                       <div className="flex h-[4rem] w-full border-b border-gray-200">
-                        <div className="flex w-[80px] shrink-0 items-center text-lg font-medium text-gray-400">{infoArr[i+8]}</div>
+                        <div className="flex w-[80px] shrink-0 items-center text-lg font-medium text-gray-400">{infoArr[i+22]}</div>
                         <Input
                           type={key=='item8'?"password":"text"}
                           variant="borderless"
-                          placeholder={`请填写${infoArr[8+i]}`}
+                          placeholder={`请填写${infoArr[22+i]}`}
                           value={values[key] ?? ""}
                           onChange={(event) => onValueChange(key, event.target.value)}
                           className=" text-[18px] placeholder:!text-[#c5c5c5] text-[#666] w-full h-full"
@@ -100,7 +97,7 @@ export default function Module3Page() {
                       htmlType="submit"
                       disabled={isSubmitDisabled}
                     >
-                      {infoArr[7]}
+                      {infoArr[24]}
                     </Button>
                   </div>
                 </Form.Item>
@@ -111,12 +108,14 @@ export default function Module3Page() {
           </Spin>
         </main>
       )}
-      {key === "key4" && <Page4 />}
       {key === "key2" && <Page2 />}
       {key === "key3" && <Page3 />}
+      {key === "key4" && <Page4 />}
       {key === "key5" && <Page5 />}
       {key === "key6" && <Page6 />}
-      {key === "key10" && <Page9 />}
+      {key === "key7" && <Page7 />}
+      {key === "key9" && <Page9 />}
+      {key === "key10" && <Page10 />}
       {key === "key12" && <Page12 />}
     </>
   );

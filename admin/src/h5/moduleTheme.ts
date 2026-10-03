@@ -18,7 +18,9 @@ export function getModuleTheme(module: string) {
   return MODULE_THEME[module as keyof typeof MODULE_THEME] ?? MODULE_THEME.module1;
 }
 
-export const moduleBannerStyle = {
+// 2026-10-02 10:40:02 CST：声明字符串索引签名，允许 H5 页面用运行时 module key 读取静态 banner class。
+// 触发场景：后端/本地状态以 string 表示 module，页面使用对应 banner class；维护时保持所有 module 的 class 在此列出。
+export const moduleBannerStyle: Record<string, string> = {
     module1: "",
     module2: "w-[60vw] mt-[3vh]",
     module3: "w-[50vw]",

@@ -6,6 +6,7 @@ import { Page5 } from './Page5';
 import { Page6 } from './Page6';
 import { Page7 } from './Page7';
 import { Page9 } from './Page9';
+import { Page10 } from './Page10';
 import { Page12 } from './Page12';
 
 export {
@@ -17,5 +18,6 @@ export {
   Page6,
   Page7,
   Page9,
+  Page10,
   Page12,
 };

@@ -41,7 +41,9 @@ func writeJSON(r *ghttp.Request, data any) {
 
 func writeError(r *ghttp.Request, status int, message string) {
 	markAuditFailure(r, message)
-	r.Response.WriteStatus(status)
+	// 2026-10-02 17:07:11 CST：错误响应只设置 HTTP 状态码，再写统一 JSON 信封，避免 WriteStatus 默认输出状态文本污染 JSON。
+	// 触发场景：登录密码错误等非 2xx 响应；维护时需保持 {code,data,message}，供 Admin 客户端稳定解析 message。
+	r.Response.WriteHeader(status)
 	r.Response.WriteJson(map[string]any{"code": status, "data": nil, "message": message})
 }
 

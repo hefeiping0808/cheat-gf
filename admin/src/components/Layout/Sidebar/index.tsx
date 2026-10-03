@@ -346,8 +346,10 @@ export function Sidebar() {
           maxWidth: "100%",
           width: "100%",
           boxSizing: "border-box",
+          minHeight: 0,
           overflowX: "hidden",
           overflowY: "auto",
+          overscrollBehavior: "contain",
           background: "transparent",
         }}
       />
@@ -398,7 +400,8 @@ export function Sidebar() {
         borderRight: `1px solid ${token.colorBorderSecondary}`,
         background: token.colorBgLayout,
         alignSelf: "stretch",
-        minHeight: "100vh",
+        height: "100dvh",
+        minHeight: 0,
         overflow: "visible",
       }}
     >

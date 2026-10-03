@@ -1,6 +1,10 @@
 package controller
 
-import "github.com/gogf/gf/v2/net/ghttp"
+import (
+	"github.com/gogf/gf/v2/net/ghttp"
+
+	"backend/internal/service"
+)
 
 func RegisterRoutes(group *ghttp.RouterGroup) {
 	group.Middleware(func(r *ghttp.Request) {
@@ -8,7 +12,14 @@ func RegisterRoutes(group *ghttp.RouterGroup) {
 		r.Middleware.Next()
 	})
 
-	group.GET("/health", func(r *ghttp.Request) { writeJSON(r, map[string]string{"status": "ok"}) })
+	// 2026-10-02 10:10:21 CST：将打包版本同时暴露给 health 和公开版本接口，供部署巡检及前端显示。
+	// 触发场景：运维调用 /health 或 Admin/H5 请求 /api/version；维护时版本值由 build-linux.sh 的 linker 参数注入。
+	group.GET("/health", func(r *ghttp.Request) {
+		writeJSON(r, map[string]string{"status": "ok", "version": service.CurrentVersion()})
+	})
+	group.GET("/api/version", func(r *ghttp.Request) {
+		writeJSON(r, map[string]string{"version": service.CurrentVersion()})
+	})
 	group.POST("/api/auth/login", withAudit("auth.login", "auth", login))
 	group.POST("/api/auth/password", withAuth(withAudit("auth.password.change", "user", changePassword), false))
 	group.GET("/api/auth/refresh", withAuth(refresh, false))
@@ -33,17 +44,23 @@ func RegisterRoutes(group *ghttp.RouterGroup) {
 	group.POST("/api/blacklist/batch", withAuth(withAudit("blacklist.batch", "blacklist", batchBlacklist), false))
 
 	group.GET("/api/mappings", withAuth(listMappings, false))
+	group.GET("/api/mappings/export", withAuth(withAudit("mappings.export", "mapping", exportMappings), true))
+	group.POST("/api/mappings/import", withAuth(withAudit("mappings.import", "mapping", importMappings), true))
 	group.POST("/api/mappings", withAuth(withAudit("mappings.create", "mapping", saveMapping), true))
 	group.PUT("/api/mappings/:id", withAuth(withAudit("mappings.update", "mapping", updateMapping), true))
 	group.DELETE("/api/mappings/:id", withAuth(withAudit("mappings.delete", "mapping", deleteMapping), true))
 	group.POST("/api/mappings/batch", withAuth(withAudit("mappings.batch", "mapping", batchMappings), true))
 	group.GET("/api/dictionary", withAuth(listDataDictionary, false))
+	group.GET("/api/dictionary/export", withAuth(withAudit("dictionary.export", "dictionary", exportDataDictionary), true))
+	group.POST("/api/dictionary/import", withAuth(withAudit("dictionary.import", "dictionary", importDataDictionary), true))
 	group.POST("/api/dictionary", withAuth(withAudit("dictionary.create", "dictionary", createDataDictionary), true))
 	group.PUT("/api/dictionary/:key", withAuth(withAudit("dictionary.update", "dictionary", updateDataDictionary), true))
 	group.DELETE("/api/dictionary/:key", withAuth(withAudit("dictionary.delete", "dictionary", deleteDataDictionary), true))
 	group.POST("/api/dictionary/batch", withAuth(withAudit("dictionary.batch", "dictionary", batchDataDictionary), true))
 
 	group.GET("/api/templates", withAuth(listTemplates, false))
+	group.GET("/api/templates/export", withAuth(withAudit("templates.export", "template", exportTemplates), true))
+	group.POST("/api/templates/import", withAuth(withAudit("templates.import", "template", importTemplates), true))
 	group.PUT("/api/templates/:module", withAuth(withAudit("templates.update", "template", updateTemplate), true))
 	group.POST("/api/templates/batch", withAuth(withAudit("templates.batch", "template", batchTemplates), true))
 	group.GET("/api/dashboard", withAuth(dashboard, false))

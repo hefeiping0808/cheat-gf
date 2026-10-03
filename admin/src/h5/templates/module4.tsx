@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { Form, Input, Button, Image, Radio } from "antd";
 import { useModuleData } from "./moduleContext";
-import { Page4, Page2, Page3, Page5, Page6, Page9, Page12 } from "../pages";
+import { Page2, Page3, Page4, Page5, Page6, Page7, Page9, Page10, Page12  } from "../pages";
 import { useH5Store } from "../store";
 import clsx from "clsx";
 
@@ -21,11 +21,9 @@ export const PAGE_ITEM_KEYS: Record<string, readonly string[]> = {
   key7: ["item4", "item7"],
   key8: ["item2"],
   key9: ["item2"],
-  key10: ["item2"],
+  key10: ["item7", "item4", "item3"],
   key11: ["item2"],
-  key12: ["item4", "item7"],
-  key13: ["item2"],
-  key14: ["item2"],
+  key12: ["item7", "item4"],
 };
 
 export default function Module4Page() {
@@ -37,7 +35,6 @@ export default function Module4Page() {
 
   useEffect(() => {
     setMmoduleInfo(moduleInfo);
-    document.title = moduleInfo.siteTitle || "";
     setInfoArr(moduleInfo.title.split("|"));
   }, [moduleInfo, setInfoArr, setMmoduleInfo]);
 
@@ -50,11 +47,11 @@ export default function Module4Page() {
             {itemKeys.map((itemKey, index) => (
               <Form.Item key={itemKey} noStyle>
                 <div className={clsx("flex w-full bg-[#2d2d2d] ", styleBorder)}>
-                  <div className="flex w-[80px] shrink-0 items-center justify-center text-sm font-medium text-[#f5f5f5]">{infoArr[index]}</div>
+                  <div className="flex w-[80px] shrink-0 items-center justify-center text-sm font-medium text-[#f5f5f5]">{infoArr[index+16]}</div>
                   <Input
                     type={itemKey === "item8" ? "password" : "text"}
                     variant="borderless"
-                    placeholder={`请填写${infoArr[1 + index]}`} bordered={false}
+                    placeholder={`请填写${infoArr[18 + index]}`} bordered={false}
                     value={values[itemKey] ?? ""}
                     onChange={(event) => onValueChange(itemKey, event.target.value)}
                     className="text-[18px] text-[#f5f5f5] placeholder:text-[#666] h-[3rem]"
@@ -71,26 +68,27 @@ export default function Module4Page() {
                   htmlType="submit"
                   disabled={isSubmitDisabled}
                 >
-                  {infoArr[4]}
+                  {infoArr[20]}
                 </Button>
               </div>
             </Form.Item>
           </Form>
           <div className="w-full text-sm my-2 text-gray-400"><Radio checked></Radio>
-            {infoArr[5]}
-            <span className="text-red-500 cursor-pointer mx-1">{infoArr[6]}</span>
-            {infoArr[7]}
+            {infoArr[21]}
+            <span className="text-red-500 cursor-pointer mx-1">{infoArr[22]}</span>
+            {infoArr[23]}
           </div>
         </main>
       )}
-      {key === "key4" && <Page4 />}
       {key === "key2" && <Page2 />}
       {key === "key3" && <Page3 />}
+      {key === "key4" && <Page4 />}
       {key === "key5" && <Page5 />}
       {key === "key6" && <Page6 />}
-      {key === "key10" && <Page9 />}
+      {key === "key7" && <Page7 />}
+      {key === "key9" && <Page9 />}
+      {key === "key10" && <Page10 />}
       {key === "key12" && <Page12 />}
     </>
   );
 }
-

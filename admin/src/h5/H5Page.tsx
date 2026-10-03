@@ -85,6 +85,13 @@ export default function H5Page() {
   const item1 = values.item1?.trim() || storedItem1.trim();
 
   useEffect(() => {
+    // 2026-10-02 10:31:28 CST：H5 路由挂载时清空浏览器标签标题，且各 module 不再覆盖该值。
+    // 触发场景：首次打开 H5、从 Admin 切入 H5 或恢复 H5 路由；页面标题保持空字符串。
+    // 维护注意：新增 H5 子页面时不要设置 document.title，避免重新显示站点标题或构建版本。
+    document.title = "";
+  }, []);
+
+  useEffect(() => {
     // 2026-09-27 13:25:48 CST：H5 挂载时清理持久化残留的 loading，并在路由卸载时停止模拟请求计时器。
     // 触发场景：页面刷新或离开期间 Zustand 中仍保存 pageLoading=true；初始化后不能让遮罩永久显示。
     // 维护注意：loading 状态由 Zustand 统一保存，计时器只负责在约 200ms 后复位状态。

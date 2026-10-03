@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/gogf/gf/v2/database/gdb"
@@ -15,9 +16,18 @@ import (
 	"backend/internal/service"
 )
 
-const maxRegularUsers = 5
+var compiledMaxRegularUsers = "5"
+var maxRegularUsers = 5
 
 var errUserLimitReached = errors.New("regular user limit reached")
+
+func init() {
+	// 2026-10-02 18:35:50 CST：用户上限由打包脚本通过 Go linker 编译进二进制，启动过程不接受运行时覆盖。
+	// 触发场景：运行打包产物时应用已固化的用户容量；直接开发运行时默认 5，0 表示无限制。
+	if limit, err := strconv.Atoi(compiledMaxRegularUsers); err == nil && limit >= 0 {
+		maxRegularUsers = limit
+	}
+}
 
 type userMutation struct {
 	Username string `json:"username"`
@@ -71,12 +81,14 @@ func createUser(r *ghttp.Request) {
 		if admin.IsEmpty() {
 			return errors.New("administrator row missing while locking user capacity")
 		}
-		count, countErr := tx.Model("users").Where("role", consts.RoleUser).Count()
-		if countErr != nil {
-			return fmt.Errorf("count regular users: %w", countErr)
-		}
-		if count >= maxRegularUsers {
-			return errUserLimitReached
+		if maxRegularUsers > 0 {
+			count, countErr := tx.Model("users").Where("role", consts.RoleUser).Count()
+			if countErr != nil {
+				return fmt.Errorf("count regular users: %w", countErr)
+			}
+			if count >= maxRegularUsers {
+				return errUserLimitReached
+			}
 		}
 		var insertErr error
 		for attempt := 0; attempt < 5; attempt++ {

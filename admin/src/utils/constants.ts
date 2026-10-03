@@ -35,3 +35,6 @@ export const APP_FAVICON_SRC = "/favicon.svg";
 
 /** Product / brand name (login header, sidebar logo text, etc.). */
 export const APP_BRAND_NAME = "Antd Admin";
+
+// 更新时间：2026-10-02 10:08:32 CST；打包脚本将 -v 参数注入 Admin，开发环境显示 dev。
+export const APP_VERSION = import.meta.env.VITE_APP_VERSION || "dev";

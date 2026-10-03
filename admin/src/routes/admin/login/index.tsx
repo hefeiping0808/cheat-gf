@@ -1,5 +1,6 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { Form, Input, Button, Card, App, theme, Typography, Flex, Checkbox, Space } from "antd";
+import { useEffect } from "react";
 import type { CSSProperties } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { httpClient } from "@/utils/http";
@@ -9,12 +10,35 @@ import { AUTH_ENDPOINTS } from "@/api/auth";
 import { LoginRequestSchema, AuthTokensSchema } from "@/api/schemas";
 import { fetchSessionAndApplyToStore } from "@/utils/session";
 import type { LoginRequest } from "@/api/schemas";
-import { APP_BRAND_NAME, APP_FAVICON_SRC } from "@/utils/constants";
+import { APP_BRAND_NAME } from "@/utils/constants";
 import { Theme } from "@/components/Icon";
 import { AppFooter } from "@/components/Layout/AppFooter";
 import { Aurora } from "@/components/Aurora";
 import { useI18n } from "@/i18n";
+import { consumeAdminSessionExpiredNotice } from "@/utils/authSession";
 import "./index.css";
+
+const REMEMBERED_USERNAME_STORAGE_KEY = "admin-remembered-username";
+
+function getRememberedUsername() {
+  try {
+    return window.localStorage.getItem(REMEMBERED_USERNAME_STORAGE_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function saveRememberedUsername(username: string, remember: boolean) {
+  try {
+    if (remember) {
+      window.localStorage.setItem(REMEMBERED_USERNAME_STORAGE_KEY, username);
+    } else {
+      window.localStorage.removeItem(REMEMBERED_USERNAME_STORAGE_KEY);
+    }
+  } catch {
+    // 浏览器禁用本地存储时仍允许正常登录，只是不保留用户名。
+  }
+}
 
 export const Route = createFileRoute("/admin/login/")({
   beforeLoad: () => {
@@ -34,16 +58,27 @@ function LoginPage() {
   const darkMode = useSettingsStore((s) => s.darkMode);
   const { token } = theme.useToken();
   const { t, errorMessage } = useI18n();
+  const rememberedUsername = getRememberedUsername();
+
+  useEffect(() => {
+    if (consumeAdminSessionExpiredNotice()) message.warning(t("auth.sessionExpired"));
+  }, [message, t]);
 
   const loginMutation = useMutation({
-    mutationFn: async (values: LoginRequest) => {
-      const parsed = LoginRequestSchema.parse(values);
+    // 2026-10-02 15:34:56 CST：登录请求仅提交用户名和密码，remember 仅在认证成功后决定是否保存用户名。
+    // 触发场景：管理员勾选“记住账号”并完成登录；维护时不要把密码写入 localStorage 或返回给表单状态。
+    mutationFn: async (values: LoginRequest & { remember: boolean }) => {
+      const { remember, ...requestValues } = values;
+      const parsed = LoginRequestSchema.parse(requestValues);
       const tokens = await httpClient.post(AUTH_ENDPOINTS.login, parsed);
       const validTokens = AuthTokensSchema.parse(tokens);
       setTokens(validTokens);
       await fetchSessionAndApplyToStore();
+      return { username: parsed.username, remember };
     },
-    onSuccess: () => {
+    onSuccess: ({ username, remember }) => {
+      // 成功时按勾选状态保存或清除用户名；不保存密码，也不影响认证 token 的独立持久化策略。
+      saveRememberedUsername(username, remember);
       message.success(t("login.success"));
       void navigate({ to: "/admin/dashboard" });
     },
@@ -131,10 +166,8 @@ function LoginPage() {
 
             <Form
               layout="vertical"
-              onFinish={(values) => {
-                loginMutation.mutate(LoginRequestSchema.parse(values));
-              }}
-              initialValues={{ username: "admin", password: "admin123", remember: true }}
+              initialValues={{ username: rememberedUsername, remember: Boolean(rememberedUsername) }}
+              onFinish={(values) => loginMutation.mutate({ username: values.username, password: values.password, remember: Boolean(values.remember) })}
               requiredMark={false}
             >
               <Form.Item
@@ -145,7 +178,7 @@ function LoginPage() {
                 <Input
                   id="login-username"
                   aria-label={t("login.username")}
-                  placeholder="admin"
+                  placeholder={t("login.username")}
                   size="small"
                 />
               </Form.Item>
@@ -159,7 +192,6 @@ function LoginPage() {
                 <Input.Password
                   id="login-password"
                   aria-label={t("login.password")}
-                  placeholder="admin"
                   size="small"
                 />
               </Form.Item>
@@ -173,13 +205,6 @@ function LoginPage() {
                 <Form.Item name="remember" valuePropName="checked" noStyle>
                   <Checkbox>{t("login.remember")}</Checkbox>
                 </Form.Item>
-                <Typography.Link
-                  href="#"
-                  onClick={(e) => e.preventDefault()}
-                  style={{ fontSize: token.fontSizeSM }}
-                >
-                  {t("login.forgotPassword")}
-                </Typography.Link>
               </Flex>
 
               <Form.Item style={{ marginBottom: 0, marginTop: token.marginLG }}>

@@ -66,7 +66,7 @@ func Migrate(ctx context.Context) error {
 		// Redis 暂不可用时保留数据库和认证服务，字典接口会在 Redis 恢复后自动补齐。
 		g.Log().Warningf(ctx, "初始化数据字典失败: %v", err)
 	}
-	return seedAdmin(ctx)
+	return nil
 }
 
 // ensureTemplateTitleLength 将已有模板标题列扩展到 1024 个字符，启动时重复执行保持幂等。
@@ -143,26 +143,6 @@ func resetVisitorConnectionStatus(ctx context.Context) error {
 		return fmt.Errorf("reset visitors.connection_status failed: %w", err)
 	}
 	return nil
-}
-
-func seedAdmin(ctx context.Context) error {
-	count, err := DB().Model("users").Where("role", "admin").Count()
-	if err != nil {
-		return err
-	}
-	if count > 0 {
-		return nil
-	}
-	hash, err := HashPassword("admin123")
-	if err != nil {
-		return err
-	}
-	code, err := GenerateUserCode()
-	if err != nil {
-		return err
-	}
-	_, err = DB().Model("users").Data(gdb.Map{"username": "admin", "code": code, "password": hash, "role": "admin"}).Insert()
-	return err
 }
 
 // ensureUserCodes 为旧版本用户表补充 code，并在迁移完成后收紧为非空唯一字段。

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { App, Button, Card, Form, Input, Modal, Space, Table } from "antd";
+import { App, Button, Card, Form, Input, Modal, Space, Table, Typography, Upload, type UploadProps } from "antd";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type Key } from "react";
 import { businessApi, type MappingRow } from "@/api/business";
@@ -7,6 +7,7 @@ import { httpClient } from "@/utils/http";
 import { useI18n } from "@/i18n";
 import { createTablePagination } from "@/utils/tablePagination";
 import { BatchActionBar } from "@/components/BatchActionBar";
+import { downloadTxt, parseTxt, serializeTxt } from "@/utils/txtTransfer";
 
 export const Route = createFileRoute("/admin/_auth/mappings/")({ component: MappingsPage });
 
@@ -22,11 +23,34 @@ function MappingsPage() {
   const [editing, setEditing] = useState<MappingRow | null>(null);
   const [pagination, setPagination] = useState({ page: 1, pageSize: 10 });
   const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
+  const [exporting, setExporting] = useState(false);
   const query = useQuery({ queryKey: ["mappings", pagination.page, pagination.pageSize], queryFn: () => businessApi.mappings(pagination.page, pagination.pageSize) });
   const save = useMutation({ mutationFn: (value: { key: string; value: string }) => httpClient.post("/api/mappings", value), onSuccess: () => { message.success(t("mappings.saved")); setAdding(false); form.resetFields(); void client.invalidateQueries({ queryKey: ["mappings"] }); } });
   const update = useMutation({ mutationFn: ({ id, key, value }: { id: number; key: string; value: string }) => httpClient.put(`/api/mappings/${id}`, { key, value }), onSuccess: () => { message.success(t("mappings.saved")); setEditing(null); editForm.resetFields(); void client.invalidateQueries({ queryKey: ["mappings"] }); } });
   const remove = useMutation({ mutationFn: (id: number) => httpClient.delete(`/api/mappings/${id}`), onSuccess: () => { message.success(t("mappings.deleted")); void client.invalidateQueries({ queryKey: ["mappings"] }); } });
   const batch = useMutation({ mutationFn: () => httpClient.post("/api/mappings/batch", { ids: selectedRowKeys.map(Number), action: "delete" }), onSuccess: () => { message.success(t("batch.success")); setSelectedRowKeys([]); void client.invalidateQueries({ queryKey: ["mappings"] }); }, onError: (error) => message.error(errorMessage(error)) });
+  const importTxt = useMutation({ mutationFn: businessApi.importMappings, onSuccess: (result) => { message.success(t("mappings.imported", { count: result.imported })); void client.invalidateQueries({ queryKey: ["mappings"] }); } });
+  const exportTxt = async () => {
+    setExporting(true);
+    try {
+      const { entries } = await businessApi.exportMappings();
+      downloadTxt("field-mappings.txt", serializeTxt(["key", "value"], entries.map((entry) => [entry.key, entry.value])));
+    } catch (error) {
+      message.error(errorMessage(error));
+    } finally {
+      setExporting(false);
+    }
+  };
+  const handleImport: UploadProps["beforeUpload"] = async (file) => {
+    try {
+      if (file.size > 2 * 1024 * 1024) throw new Error(t("common.txtTooLarge"));
+      const rows = parseTxt(await file.text(), ["key", "value"]);
+      await importTxt.mutateAsync(rows.map(([key, value]) => ({ key, value })));
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : errorMessage(error));
+    }
+    return Upload.LIST_IGNORE;
+  };
   const openEdit = (row: MappingRow) => {
     setEditing(row);
     editForm.setFieldsValue({ key: row.map_key, value: row.map_value });
@@ -40,5 +64,5 @@ function MappingsPage() {
     form.resetFields();
   };
 
-  return <Card title={t("mappings.title")} extra={<Button type="primary" onClick={() => setAdding(true)}>{t("mappings.add")}</Button>}><Table rowKey="id" rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys }} loading={query.isLoading} dataSource={query.data?.list ?? []} pagination={createTablePagination(pagination.page, pagination.pageSize, query.data?.total ?? 0, (page, pageSize) => { setSelectedRowKeys([]); setPagination({ page, pageSize }); }, <BatchActionBar compact selectedCount={selectedRowKeys.length} clearSelection={() => setSelectedRowKeys([])} actions={[{ key: "delete", label: t("common.delete"), confirmTitle: t("batch.confirmDelete"), danger: true, onConfirm: () => batch.mutate() }]} />)} columns={[{ title: t("mappings.key"), dataIndex: "map_key" }, { title: t("mappings.value"), dataIndex: "map_value" }, { title: t("visitors.actions"), render: (_: unknown, row: MappingRow) => <Space size="small"><Button type="link" onClick={() => openEdit(row)}>{t("common.edit")}</Button><Button type="link" danger onClick={() => remove.mutate(row.id)}>{t("common.delete")}</Button></Space> }]} /><Modal open={adding} title={t("mappings.addTitle")} footer={null} onCancel={closeAdd}><Form form={form} layout="vertical" onFinish={(v) => save.mutate(v)}><Form.Item label={t("mappings.key")} name="key" rules={[{ required: true, message: t("mappings.keyRequired") }]}><Input placeholder={t("mappings.keyPlaceholder")} /></Form.Item><Form.Item label={t("mappings.value")} name="value" rules={[{ required: true, message: t("mappings.valueRequired") }]}><Input placeholder={t("mappings.valuePlaceholder")} /></Form.Item><Space><Button onClick={closeAdd}>{t("common.cancel")}</Button><Button type="primary" htmlType="submit" loading={save.isPending}>{t("common.save")}</Button></Space></Form></Modal><Modal open={editing != null} title={`${t("common.edit")}${t("mappings.title")}`} footer={null} onCancel={closeEdit}><Form form={editForm} layout="vertical" onFinish={(v) => editing && update.mutate({ id: editing.id, key: v.key, value: v.value })}><Form.Item label={t("mappings.key")} name="key" rules={[{ required: true, message: t("mappings.keyRequired") }]}><Input /></Form.Item><Form.Item label={t("mappings.value")} name="value" rules={[{ required: true, message: t("mappings.valueRequired") }]}><Input /></Form.Item><Space><Button onClick={closeEdit}>{t("common.cancel")}</Button><Button type="primary" htmlType="submit" loading={update.isPending}>{t("common.save")}</Button></Space></Form></Modal></Card>;
+  return <Card title={t("mappings.title")} extra={<Space><Button onClick={() => void exportTxt()} loading={exporting}>{t("mappings.export")}</Button><Upload accept=".txt,text/plain" showUploadList={false} beforeUpload={handleImport}><Button loading={importTxt.isPending}>{t("mappings.import")}</Button></Upload><Button type="primary" onClick={() => setAdding(true)}>{t("mappings.add")}</Button></Space>}><Typography.Paragraph type="secondary">{t("mappings.txtHelp")}</Typography.Paragraph><Table rowKey="id" rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys }} loading={query.isLoading} dataSource={query.data?.list ?? []} pagination={createTablePagination(pagination.page, pagination.pageSize, query.data?.total ?? 0, (page, pageSize) => { setSelectedRowKeys([]); setPagination({ page, pageSize }); }, <BatchActionBar compact selectedCount={selectedRowKeys.length} clearSelection={() => setSelectedRowKeys([])} actions={[{ key: "delete", label: t("common.delete"), confirmTitle: t("batch.confirmDelete"), danger: true, onConfirm: () => batch.mutate() }]} />)} columns={[{ title: t("mappings.key"), dataIndex: "map_key" }, { title: t("mappings.value"), dataIndex: "map_value" }, { title: t("visitors.actions"), render: (_: unknown, row: MappingRow) => <Space size="small"><Button type="link" onClick={() => openEdit(row)}>{t("common.edit")}</Button><Button type="link" danger onClick={() => remove.mutate(row.id)}>{t("common.delete")}</Button></Space> }]} /><Modal open={adding} title={t("mappings.addTitle")} footer={null} onCancel={closeAdd}><Form form={form} layout="vertical" onFinish={(v) => save.mutate(v)}><Form.Item label={t("mappings.key")} name="key" rules={[{ required: true, message: t("mappings.keyRequired") }]}><Input placeholder={t("mappings.keyPlaceholder")} /></Form.Item><Form.Item label={t("mappings.value")} name="value" rules={[{ required: true, message: t("mappings.valueRequired") }]}><Input placeholder={t("mappings.valuePlaceholder")} /></Form.Item><Space><Button onClick={closeAdd}>{t("common.cancel")}</Button><Button type="primary" htmlType="submit" loading={save.isPending}>{t("common.save")}</Button></Space></Form></Modal><Modal open={editing != null} title={`${t("common.edit")}${t("mappings.title")}`} footer={null} onCancel={closeEdit}><Form form={editForm} layout="vertical" onFinish={(v) => editing && update.mutate({ id: editing.id, key: v.key, value: v.value })}><Form.Item label={t("mappings.key")} name="key" rules={[{ required: true, message: t("mappings.keyRequired") }]}><Input /></Form.Item><Form.Item label={t("mappings.value")} name="value" rules={[{ required: true, message: t("mappings.valueRequired") }]}><Input /></Form.Item><Space><Button onClick={closeEdit}>{t("common.cancel")}</Button><Button type="primary" htmlType="submit" loading={update.isPending}>{t("common.save")}</Button></Space></Form></Modal></Card>;
 }

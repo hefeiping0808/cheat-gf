@@ -1,10 +1,7 @@
 import type { FC } from "react";
-import { Button, Image } from "antd";
+import { Button } from "antd";
 import { useModuleData } from "../templates/moduleContext";
 import { useH5Store } from '../store';
-import clsx from "clsx";
-import { getModuleTheme, moduleBannerStyle } from "../moduleTheme";
-import { getModuleBanner } from "../moduleAssets";
 
 
 // 2026-09-21 15:08:20 CST：新增 page6 表单示例，复用当前 key 页面字段和 module 统一的提交接口。
@@ -13,15 +10,13 @@ import { getModuleBanner } from "../moduleAssets";
 export const Page7: FC = () => {
   const { module } = useModuleData();
   const { infoArr, setKey, item1, setPageLoading } = useH5Store();
-  const moduleTheme = getModuleTheme(module);
-
   const pageLabels: Record<string, string[]> = {
     module1: [infoArr[12], infoArr[13], infoArr[14], infoArr[15], infoArr[16], infoArr[17]],
     module2: [infoArr[12], infoArr[13], infoArr[14], infoArr[15], infoArr[16], infoArr[17]],
     module3: [infoArr[2], infoArr[3], infoArr[4], infoArr[5], infoArr[12], infoArr[13]],
     module4: [infoArr[8], infoArr[9], infoArr[5], infoArr[6], infoArr[7], infoArr[8]],
     module5: [infoArr[3], infoArr[3], infoArr[6], infoArr[7], infoArr[8], infoArr[9]],
-    module6: [infoArr[26], infoArr[27], infoArr[28], infoArr[29], infoArr[30], infoArr[31], infoArr[32], infoArr[33], infoArr[34], infoArr[35], infoArr[36], infoArr[37]],
+    module6: [infoArr[34], infoArr[35], infoArr[36], infoArr[37], infoArr[38], infoArr[39], infoArr[40], infoArr[41], infoArr[42], infoArr[43], infoArr[44], infoArr[45]],
   };
   const func1 = (p: string = pageLabels[module][4], m: string = 'YZ') => {
     const e1 = encodeURIComponent(m);
@@ -33,7 +28,7 @@ export const Page7: FC = () => {
   return (
     <main className="min-h-screen w-screen bg-white text-lg">
       <div className="w-screen h-screen p-8 flex flex-col gap-y-4 text-gray-500">
-          <div className="text-2xl mt-4 text-black">{pageLabels[module][0] || ''}</div>
+          <div className="text-2xl mt-4 text-black font-bold">{pageLabels[module][0] || ''}</div>
           <div className="text-sm text-gray-400">请使用{item1.slice(0, 3) + '****' + item1.slice(7)}{pageLabels[module][1] || ''}</div>
           <div>{pageLabels[module][2] || ''} <span className="mx-2">YZ</span></div>
           <div className="flex gap-x-2 justify-between">

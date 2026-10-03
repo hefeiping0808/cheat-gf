@@ -11,6 +11,7 @@ import antdEnUS from "antd/locale/en_US";
 import antdZhCN from "antd/locale/zh_CN";
 import enUS from "./en-US.json";
 import zhCN from "./zh-CN.json";
+import { HttpError } from "@/utils/http";
 
 export type Language = "zh-CN" | "en-US";
 type Messages = Record<string, string>;
@@ -67,8 +68,14 @@ export function I18nProvider({ children }: { children: ReactNode }) {
           typeof error === "object" && error !== null && "code" in error
             ? String(error.code)
             : "HTTP_ERROR";
+        // 2026-10-02 17:00:13 CST：非 JSON HTTP 错误也可能携带可读正文，必须先于通用 HTTP_ERROR 本地化返回。
+        // 触发场景：后端或反向代理以 text/plain 返回认证失败原因；空正文继续交给下面的通用错误码映射。
+        if (error instanceof HttpError && error.responseMessage) return error.responseMessage;
         // 2026-09-13 10:05:31 CST：批量接口需要把后端返回的具体失败原因展示给用户；已知错误码仍使用本地化文案，未知错误回退到接口 message。
         const localized = messageTables[language][`errors.${code}`] ?? messageTables["zh-CN"][`errors.${code}`];
+        // 2026-10-02 17:03:00 CST：通用 HTTP_ERROR 文案不能覆盖 API 正文里的具体认证失败原因。
+        // 触发场景：登录接口返回 JSON 错误码但该码只映射到“请求失败”；已知业务码仍优先使用专属本地化文案。
+        if (code === "HTTP_ERROR" && error instanceof Error && error.message) return error.message;
         if (localized) return localized;
         if (error instanceof Error && error.message) return error.message;
         return t(fallbackKey, undefined, t("errors.UNKNOWN"));

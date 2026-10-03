@@ -23,12 +23,12 @@ export const Page3: FC = () => {
   const moduleTheme = getModuleTheme(module);
 
   const pageLabels: Record<string, string[]> = {
-    module1: [infoArr[10], infoArr[11], ],
-    module2: [infoArr[12], infoArr[13], ],
-    module3: [infoArr[13], infoArr[12], ],
-    module4: [infoArr[8], infoArr[9], ],
-    module5: [infoArr[3], infoArr[3], ],
-    module6: [infoArr[18], infoArr[19]],
+    module1: [infoArr[2], infoArr[3], ],
+    module2: [infoArr[2], infoArr[3], ],
+    module3: [infoArr[2], infoArr[3], ],
+    module4: [infoArr[2], infoArr[3], ],
+    module5: [infoArr[2], infoArr[3], ],
+    module6: [infoArr[2], infoArr[3], ],
   };
   const clearTimer = () => {
     if (timerRef.current) {

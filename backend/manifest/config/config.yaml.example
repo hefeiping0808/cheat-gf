@@ -1,0 +1,25 @@
+server:
+  address: "127.0.0.1:8000"
+  openapiPath: "/api.json"
+  swaggerPath: "/swagger"
+
+logger:
+  level: "info"
+  stdout: true
+
+database:
+  default:
+    link: "mysql:cheat_gf:CHANGE_ME@tcp(127.0.0.1:3306)/cheat_gf?charset=utf8mb4&parseTime=true&loc=Local"
+
+redis:
+  address: "127.0.0.1:6379"
+  pass: "CHANGE_ME"
+
+app:
+  jwtSecret: "REPLACE_WITH_A_LONG_RANDOM_SECRET"
+  aesSecret: ""
+  jwtExpireHours: 12
+  corsOrigins: ""
+
+ip-region:
+  skip-ips: ""

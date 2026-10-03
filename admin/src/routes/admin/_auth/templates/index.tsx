@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { App, Button, Card, Checkbox, Form, Input, Modal, Switch, Table, Typography } from "antd";
+import { App, Button, Card, Checkbox, Form, Input, Modal, Space, Switch, Table, Typography, Upload, type UploadProps } from "antd";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState, type Key } from "react";
 import { businessApi, type TemplateRow } from "@/api/business";
@@ -7,6 +7,7 @@ import { httpClient } from "@/utils/http";
 import { useI18n } from "@/i18n";
 import { createTablePagination } from "@/utils/tablePagination";
 import { BatchActionBar } from "@/components/BatchActionBar";
+import { downloadTxt, parseTxt, serializeTxt } from "@/utils/txtTransfer";
 
 export const Route = createFileRoute("/admin/_auth/templates/")({ component: TemplatesPage });
 
@@ -28,10 +29,38 @@ function TemplatesPage() {
   const [editing, setEditing] = useState<TemplateRow | null>(null);
   const [pagination, setPagination] = useState({ page: 1, pageSize: 10 });
   const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
+  const [exporting, setExporting] = useState(false);
   const [form] = Form.useForm<TemplateForm>();
   const query = useQuery({ queryKey: ["templates", pagination.page, pagination.pageSize], queryFn: () => businessApi.templates(pagination.page, pagination.pageSize) });
   const dictionaryQuery = useQuery({ queryKey: ["dictionary", "template-options"], queryFn: () => businessApi.dictionary(1, 40) });
   const keyLabels = useMemo(() => Object.fromEntries((dictionaryQuery.data?.list ?? []).filter((item) => item.key.startsWith("key")).map((item) => [item.key, item.label?.trim() || item.key])), [dictionaryQuery.data]);
+
+  const importTxt = useMutation({ mutationFn: businessApi.importTemplates, onSuccess: (result) => { message.success(t("templates.imported", { count: result.imported })); void client.invalidateQueries({ queryKey: ["templates"] }); } });
+  const exportTxt = async () => {
+    setExporting(true);
+    try {
+      const { entries } = await businessApi.exportTemplates();
+      downloadTxt("templates.txt", serializeTxt(["module", "label", "keys", "title", "siteTitle", "formTitle", "enabled"], entries.map((entry) => [entry.module, entry.label ?? "", (entry.keys ?? []).join(","), entry.title ?? "", entry.site_title ?? "", entry.form_title ?? "", String(entry.enabled)])));
+    } catch (error) {
+      message.error(errorMessage(error));
+    } finally {
+      setExporting(false);
+    }
+  };
+  const handleImport: UploadProps["beforeUpload"] = async (file) => {
+    try {
+      if (file.size > 2 * 1024 * 1024) throw new Error(t("common.txtTooLarge"));
+      const rows = parseTxt(await file.text(), ["module", "label", "keys", "title", "siteTitle", "formTitle", "enabled"]);
+      const entries = rows.map(([module, label, keys, title, siteTitle, formTitle, enabled]) => {
+        if (!/^(true|false)$/i.test(enabled)) throw new Error(`模板 ${module} 的 enabled 必须为 true 或 false`);
+        return { module, label, keys: keys ? keys.split(",").map((key) => key.trim()).filter(Boolean) : [], title, siteTitle, formTitle, enabled: enabled.toLowerCase() === "true" };
+      });
+      await importTxt.mutateAsync(entries);
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : errorMessage(error));
+    }
+    return Upload.LIST_IGNORE;
+  };
 
   const toggle = useMutation({
     mutationFn: ({ module, enabled }: { module: string; enabled: boolean }) =>
@@ -76,8 +105,9 @@ function TemplatesPage() {
   };
 
   return (
-    <Card title={t("templates.title")}>
+    <Card title={t("templates.title")} extra={<Space><Button onClick={() => void exportTxt()} loading={exporting}>{t("templates.export")}</Button><Upload accept=".txt,text/plain" showUploadList={false} beforeUpload={handleImport}><Button loading={importTxt.isPending}>{t("templates.import")}</Button></Upload></Space>}>
       <Typography.Paragraph type="secondary">{t("templates.description")}</Typography.Paragraph>
+      <Typography.Paragraph type="secondary">{t("templates.txtHelp")}</Typography.Paragraph>
       <Table
         rowKey="id"
         rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys }}
