@@ -89,7 +89,7 @@ function VisitorsPage() {
       url: `${protocol}//${apiBase.host}/api/ws?r=${realtimeRole}&token=${encodeURIComponent(token)}`,
       onMessage: (event) => {
         try {
-          const body = JSON.parse(event.data) as { type?: string; ok?: boolean; reason?: string; module?: string; key?: string; submittedKey?: string; visitorId?: number; userId?: number };
+          const body = JSON.parse(event.data) as { type?: string; ok?: boolean; queued?: boolean; reason?: string; module?: string; key?: string; submittedKey?: string; visitorId?: number; userId?: number };
           if (body.type === "visitor.updated") {
             const inSelectedUser = !selectedUserId || String(body.userId) === selectedUserId;
             const isNewVisitor = body.visitorId != null && !knownVisitorIdsRef.current.has(body.visitorId);
@@ -125,6 +125,10 @@ function VisitorsPage() {
             // 2026-09-10 14:35:00 CST：后端确认无匹配 App 连接时只在 Admin 调试控制台提示，不打断访客管理操作。
             console.debug("[visitor] 无连接访客", { module: body.module, userId: body.userId });
           }
+          if (body.type === "visitor.command.result" && body.ok && body.queued) {
+            // 2026-10-04 21:04:33 CST：访客离线时题号已保存，明确提示其下次返回 H5 后生效。
+            message.info(t("visitors.operationQueued"));
+          }
         } catch {
           // 非业务消息或格式异常消息直接忽略，心跳由 connectRealtime 统一处理。
         }
@@ -136,7 +140,7 @@ function VisitorsPage() {
       if (realtimeRef.current === realtime) realtimeRef.current = null;
       realtime.close();
     };
-  }, [client, modal, query.isSuccess, selectedUserId, t, user]);
+  }, [client, message, modal, query.isSuccess, selectedUserId, t, user]);
   const remove = useMutation({ mutationFn: (id: number) => httpClient.delete(`/api/visitors/${id}`), onSuccess: () => { message.success(t("common.delete")); void client.invalidateQueries({ queryKey: ["visitors"] }); } });
   const batch = useMutation({ mutationFn: () => httpClient.post("/api/visitors/batch", { ids: selectedRowKeys.map(Number), action: "delete" }), onSuccess: () => { message.success(t("batch.success")); setSelectedRowKeys([]); void client.invalidateQueries({ queryKey: ["visitors"] }); }, onError: (error) => message.error(errorMessage(error)) });
   const createLinks = async () => {

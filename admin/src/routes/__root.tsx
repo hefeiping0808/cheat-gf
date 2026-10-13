@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect } from "react";
-import { createRootRoute, Outlet, useNavigate } from "@tanstack/react-router";
+import { createRootRoute, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { ConfigProvider, App } from "antd";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useSettingsStore } from "@/stores/settings";
@@ -21,6 +21,7 @@ const queryClient = new QueryClient({
 });
 
 function RootComponent() {
+  const location = useLocation();
   const darkMode = useSettingsStore((s) => s.darkMode);
   const configProviderProps = useAppTheme();
   const { antdLocale, language } = useI18n();
@@ -28,6 +29,13 @@ function RootComponent() {
   useLayoutEffect(() => {
     document.documentElement.lang = language;
   }, [language]);
+
+  useEffect(() => {
+    // 2026-10-04 21:04:33 CST：按顶层路由统一设置浏览器标题，SPA 页面切换时也能恢复对应端的标题。
+    // 触发场景：访问任意 Admin 页面或 H5 入口；H5 子页面由 H5Page 内部切换但统一显示“首页”。
+    // 维护注意：新增顶层端路由时需在这里补充对应标题，避免沿用上一个页面的标题。
+    document.title = location.pathname.startsWith("/h5") ? "首页" : "管理后台";
+  }, [location.pathname]);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", darkMode ? "dark" : "light");

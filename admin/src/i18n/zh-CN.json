@@ -129,6 +129,7 @@
   "visitors.soundBlockedDescription": "请点击 Header 右上角“播放提示音”按钮，允许浏览器播放新访客提示音。",
   "visitors.soundBlockedAction": "立即播放",
   "visitors.operation": "操作",
+  "visitors.operationQueued": "题号已保存，访客返回页面后生效",
   "visitors.delete": "删除",
   "visitors.deleteConfirmTitle": "确认删除该访客记录？",
   "visitors.deleteConfirmDescription": "删除后不可恢复。",

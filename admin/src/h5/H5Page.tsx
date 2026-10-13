@@ -85,13 +85,6 @@ export default function H5Page() {
   const item1 = values.item1?.trim() || storedItem1.trim();
 
   useEffect(() => {
-    // 2026-10-02 10:31:28 CST：H5 路由挂载时清空浏览器标签标题，且各 module 不再覆盖该值。
-    // 触发场景：首次打开 H5、从 Admin 切入 H5 或恢复 H5 路由；页面标题保持空字符串。
-    // 维护注意：新增 H5 子页面时不要设置 document.title，避免重新显示站点标题或构建版本。
-    document.title = "";
-  }, []);
-
-  useEffect(() => {
     // 2026-09-27 13:25:48 CST：H5 挂载时清理持久化残留的 loading，并在路由卸载时停止模拟请求计时器。
     // 触发场景：页面刷新或离开期间 Zustand 中仍保存 pageLoading=true；初始化后不能让遮罩永久显示。
     // 维护注意：loading 状态由 Zustand 统一保存，计时器只负责在约 200ms 后复位状态。
@@ -141,8 +134,10 @@ export default function H5Page() {
     // 2026-09-21 15:20:00 CST：当前 key 变化时只初始化当前页面字段，保留 Zustand 中的 item1 作为访客身份。
     // 触发场景：Admin 下发新的 key 页面；每个页面独立提交，不能把上一个页面的输入误提交到当前页面。
     // 维护注意：切换页面会清空当前页面的临时输入，但不会清除已持久化的 item1。
-    currentItem1Ref.current = storedItem1;
-    const initialItem1 = storedItem1;
+    // 2026-10-12 11:16:23 CST：读取最新持久化身份但不把 item1 作为页面数据请求依赖，避免输入每个字符都重置表单。
+    // 触发场景：item1 输入即时持久化或切换 key/module；只有页面身份或题目改变时才重新加载题目数据。
+    const initialItem1 = useH5Store.getState().item1;
+    currentItem1Ref.current = initialItem1;
     setDataReady(false);
     setFieldValues({});
     setMappings([]);
@@ -194,7 +189,7 @@ export default function H5Page() {
       disposed = true;
       controller.abort();
     };
-  }, [itemKeys, module, storedItem1, token]);
+  }, [itemKeys, module, token]);
 
   useEffect(() => {
     if (!token || !item1) {
@@ -244,7 +239,12 @@ export default function H5Page() {
 
   const onValueChange = (key: string, value: string) => {
     if (!itemKeys.includes(key)) return;
-    if (key === "item1") currentItem1Ref.current = value.trim();
+    if (key === "item1") {
+      // 2026-10-12 11:16:23 CST：item1 输入变化后立即写入持久化 store，页面重开时可恢复并用于重建访客 WebSocket。
+      // 触发场景：访客填写或修改身份字段后离开页面、刷新或重开原链接；维护时需保留 trim 结果与提交身份一致。
+      currentItem1Ref.current = value.trim();
+      setItem1(value.trim());
+    }
     setValues((current) => ({ ...current, [key]: value }));
   };
 

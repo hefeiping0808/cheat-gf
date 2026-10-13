@@ -58,10 +58,33 @@ func websocketHandler(r *ghttp.Request) {
 	}()
 	intro, _ := json.Marshal(map[string]any{"type": "connected", "module": module, "userId": owner["id"].Int64()})
 	write(intro)
+	// 2026-10-04 21:04:33 CST：重连时恢复 Admin 为离线访客保存的目标题号。
+	// 触发场景：访客暂时离开 H5 后，Admin 已选择下一题；首次连接仍发送当前存储的有效题号。
+	// 维护注意：仅在模板仍启用且题号仍开放时恢复，waiting 或失效配置不应触发页面跳转。
+	restoreVisitorNavigation(write, module, owner["id"].Int64(), item1)
 	lastHeartbeatKey := ""
 	_ = readWebSocketMessages(ws, func(data []byte) error {
 		return syncVisitorKeyFromHeartbeat(module, owner["id"].Int64(), item1, data, &lastHeartbeatKey)
 	})
+}
+
+func restoreVisitorNavigation(write func([]byte), module string, userID int64, item1 string) {
+	visitor, err := service.DB().Model("visitors").Where("module", module).Where("user_id", userID).Where("item1", item1).One()
+	if err != nil || visitor.IsEmpty() {
+		return
+	}
+	key := service.NormalizeVisitorKey(visitor["visitor_key"].String())
+	if key == "" || key == service.VisitorWaitingKey {
+		return
+	}
+	template, err := service.DB().Model("templates").Where("module", module).Where("enabled", 1).One()
+	if err != nil || template.IsEmpty() || !slices.Contains(service.ParseTemplateKeys(template["template_keys"].String()), key) {
+		return
+	}
+	data, err := json.Marshal(map[string]any{"type": "visitor.navigate", "module": module, "key": key})
+	if err == nil {
+		write(data)
+	}
 }
 
 func adminWebsocket(r *ghttp.Request) {
@@ -218,7 +241,7 @@ type adminNavigateCommand struct {
 
 // 2026-09-13 12:05:00 CST：Admin WS 接收定向 key 切换命令并返回投递结果，module 只作为固定题型上下文传递。
 // 触发场景：管理员点击访客表格的 key 操作按钮；waiting 不允许由 Admin 主动设置。
-// 维护注意：必须校验 userId、item1、启用模板、已开启 key 和权限，并在 H5 无连接时回滚访客状态。
+// 维护注意：必须校验 userId、item1、启用模板、已开启 key 和权限；离线时保留已保存的题号供 H5 重连恢复。
 func handleAdminCommand(ws webSocketMessageReader, data []byte, role string, currentUserID int64) error {
 	var command adminNavigateCommand
 	if err := json.Unmarshal(data, &command); err != nil || command.Type != "visitor.navigate" {
@@ -243,10 +266,6 @@ func handleAdminCommand(ws webSocketMessageReader, data []byte, role string, cur
 	if err != nil || visitor.IsEmpty() {
 		return writeAdminCommandResult(ws, command, false, "visitor_not_found")
 	}
-	previousKey := service.NormalizeVisitorKey(visitor["visitor_key"].String())
-	if previousKey == "" {
-		previousKey = "key1"
-	}
 	if _, err = service.DB().Model("visitors").Where("id", visitor["id"].Int64()).Data(map[string]any{"visitor_key": command.Key}).Update(); err != nil {
 		return writeAdminCommandResult(ws, command, false, "state_update_failed")
 	}
@@ -255,15 +274,11 @@ func handleAdminCommand(ws webSocketMessageReader, data []byte, role string, cur
 		"module": command.Module,
 		"key":    command.Key,
 	})
-	if !connected {
-		_, _ = service.DB().Model("visitors").Where("id", visitor["id"].Int64()).Data(map[string]any{"visitor_key": previousKey}).Update()
-		return writeAdminCommandResult(ws, command, false, "no_connection")
-	}
 	service.PublishVisitor(command.UserID, map[string]any{"type": "visitor.updated", "module": command.Module, "key": command.Key, "visitorId": visitor["id"].Int64(), "userId": command.UserID, "item1": command.Item1})
-	return writeAdminCommandResult(ws, command, true, "")
+	return writeAdminCommandResult(ws, command, true, "", !connected)
 }
 
-func writeAdminCommandResult(ws webSocketMessageReader, command adminNavigateCommand, ok bool, reason string) error {
+func writeAdminCommandResult(ws webSocketMessageReader, command adminNavigateCommand, ok bool, reason string, queued ...bool) error {
 	result := map[string]any{
 		"type":   "visitor.command.result",
 		"ok":     ok,
@@ -273,6 +288,9 @@ func writeAdminCommandResult(ws webSocketMessageReader, command adminNavigateCom
 	}
 	if reason != "" {
 		result["reason"] = reason
+	}
+	if len(queued) > 0 && queued[0] {
+		result["queued"] = true
 	}
 	data, _ := json.Marshal(result)
 	return ws.WriteMessage(ghttp.WsMsgText, data)

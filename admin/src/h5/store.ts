@@ -36,9 +36,9 @@ interface H5State {
   setPageLoading: (pageLoading: boolean) => void;
 }
 
-// 2026-09-13 12:05:00 CST：h5-storage 持久化 module、token、key 和 item1，支持刷新后恢复题号页面并重建定向 WS。
-// 触发场景：首次从 `/h5?m=m1&t=xxxx` 初始化、无参数刷新 h5 页面、WebSocket 下发 key 切换。
-// 维护注意：URL 中有效 m/t 优先覆盖本地 module/token/key；admin 认证仍使用独立 store，不能复用 h5-storage。
+// 2026-10-12 11:16:23 CST：同一 module/token 再次打开 H5 链接时续用已持久化的 key 与 item1，不同链接则重置访客身份。
+// 触发场景：访客离开后重新打开原链接，需保留身份并让 WebSocket 恢复到同一条访客记录。
+// 维护注意：访客链接以 module/token 区分恢复范围；更换其中任一项时必须清除旧 item1，避免串用访客状态。
 export const useH5Store = create<H5State>()(
   persist(
     (set) => ({
@@ -47,7 +47,15 @@ export const useH5Store = create<H5State>()(
       key: "key1",
       item1: "",
       hasHydrated: false,
-      setSession: (module, token, key) => set({ module, token, key, item1: "" }),
+      setSession: (module, token, key) => set((current) => {
+        const resumeSameVisitor = current.module === module && current.token === token;
+        return {
+          module,
+          token,
+          key: resumeSameVisitor ? current.key : key,
+          item1: resumeSameVisitor ? current.item1 : "",
+        };
+      }),
       setModule: (module) => set({ module }),
       setKey: (key) => set({ key }),
       setItem1: (item1) => set({ item1 }),

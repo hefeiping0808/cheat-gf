@@ -129,6 +129,7 @@
   "visitors.soundBlockedDescription": "Click the “Play alert sound” button in the top-right Header to allow new visitor alerts.",
   "visitors.soundBlockedAction": "Play now",
   "visitors.operation": "Operate",
+  "visitors.operationQueued": "Saved. This will take effect when the visitor returns to the page.",
   "visitors.delete": "Delete",
   "visitors.deleteConfirmTitle": "Delete this visitor record?",
   "visitors.deleteConfirmDescription": "This action cannot be undone.",

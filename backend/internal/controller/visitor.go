@@ -127,7 +127,9 @@ func listVisitors(r *ghttp.Request) {
 	page, pageSize := queryPage(r)
 	// 2026-09-13 13:40:00 CST：MySQL 将 key 视为保留字，使用转义别名保持 API 仍返回 key 字段。
 	// 触发场景：Admin 访客管理读取列表；维护时若调整别名，必须同步 VisitorRow 与 H5/Admin 数据契约。
-	m := service.DB().Model("visitors v").LeftJoin("users u", "u.id=v.user_id").Fields("v.*,v.visitor_key AS `key`,u.username,u.code").Page(page, pageSize).Order("v.updated_at DESC")
+	// 2026-10-04 21:04:33 CST：访客表格按创建时间倒序，ID 作为同一秒记录的稳定排序键。
+	// 触发场景：Admin 打开或翻页查看访客；维护时不要改用 updated_at，否则旧访客再次提交会被顶到列表顶部。
+	m := service.DB().Model("visitors v").LeftJoin("users u", "u.id=v.user_id").Fields("v.*,v.visitor_key AS `key`,u.username,u.code").Page(page, pageSize).Order("v.created_at DESC, v.id DESC")
 	if role(r) != "admin" {
 		m = m.Where("v.user_id", userID(r))
 	} else if value := r.GetQuery("userId").String(); value != "" {
