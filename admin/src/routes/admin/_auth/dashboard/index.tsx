@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Button, Card, Col, Modal, Row, Statistic, Table, Tag } from "antd";
+import { Button, Card, Col, Modal, Row, Statistic, Table, Tag, theme } from "antd";
 import { useQuery } from "@tanstack/react-query";
 import * as echarts from "echarts";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -26,13 +26,15 @@ function localRecentDays(): string[] {
 
 function DashboardTrendChart({ days, rows, moduleLabels }: { days: string[]; rows: Array<{ day: string; module: string; visits: number }>; moduleLabels: Record<string, string> }) {
   const { t } = useI18n();
+  const { token } = theme.useToken();
   const chartElement = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<echarts.ECharts | null>(null);
   const option = useMemo<echarts.EChartsOption>(() => {
     const visitCountByKey = new Map(rows.map((row) => [`${row.day}:${row.module}`, row.visits]));
     return {
       animation: false,
-      color: ["#1677ff", "#52c41a", "#faad14", "#f5222d", "#722ed1", "#13c2c2", "#eb2f96", "#fa541c", "#2f54eb", "#a0d911"],
+      // 2026-10-14 07:34:29 CST：首个趋势序列跟随 Admin 金色主色，避免图表继续沿用默认蓝色强调色。
+      color: [token.colorPrimary, "#52c41a", "#faad14", "#f5222d", "#722ed1", "#13c2c2", "#eb2f96", "#fa541c", "#8c6d31", "#a0d911"],
       tooltip: { trigger: "axis" },
       legend: { type: "scroll", top: 0, left: 0, right: 0 },
       grid: { top: 48, right: 20, bottom: 32, left: 48, containLabel: true },
@@ -46,7 +48,7 @@ function DashboardTrendChart({ days, rows, moduleLabels }: { days: string[]; row
         data: days.map((day) => visitCountByKey.get(`${day}:${module}`) ?? 0),
       })),
     };
-  }, [days, moduleLabels, rows, t]);
+  }, [days, moduleLabels, rows, t, token.colorPrimary]);
 
   useEffect(() => {
     if (!chartElement.current) return;

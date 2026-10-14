@@ -1,12 +1,20 @@
 import { theme } from "antd";
 import type { ConfigProviderProps, ThemeConfig } from "antd";
 
+const ADMIN_GOLD_PRIMARY = "#9a741d";
+
 /**
  * Common theme token builders
  * Reduces duplication between light and dark theme definitions
  */
 
 export const SHARED_DESIGN_TOKENS = {
+  // 2026-10-14 07:34:29 CST：以高对比度金色替换 Admin 原有蓝色主色和信息链接色。
+  // 触发场景：Admin 浅色或深色主题生成主按钮、链接、聚焦态及提示色。
+  // 维护注意：colorInfo 与 colorLink 需跟随 colorPrimary，避免 Ant Design 默认值重新引入蓝色。
+  colorPrimary: ADMIN_GOLD_PRIMARY,
+  colorInfo: ADMIN_GOLD_PRIMARY,
+  colorLink: ADMIN_GOLD_PRIMARY,
   fontFamily:
     "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif",
 

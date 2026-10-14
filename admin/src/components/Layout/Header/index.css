@@ -1,0 +1,35 @@
+/* 2026-10-14 07:24:23 CST：为 Admin 顶部 Header 提供局部黑金配色。
+ * 触发场景：所有使用 MainLayout 的 Admin 页面渲染顶部导航。
+ * 维护注意：选择器限定在 .admin-header 下，新增 Header 操作控件时需同步检查文字、图标和悬停对比度。
+ */
+.admin-header.ant-layout-header {
+  color: var(--admin-gold);
+}
+
+.admin-header .ant-btn {
+  color: var(--admin-gold);
+}
+
+.admin-header .ant-btn:hover,
+.admin-header .ant-btn:focus-visible {
+  color: var(--admin-gold-hover);
+  background: var(--admin-gold-soft-strong);
+}
+
+.admin-header .ant-breadcrumb,
+.admin-header .ant-breadcrumb a,
+.admin-header .ant-breadcrumb li:last-child {
+  color: var(--admin-gold);
+}
+
+.admin-header .ant-breadcrumb a:hover {
+  color: var(--admin-gold-hover);
+}
+
+.admin-header .ant-breadcrumb-separator {
+  color: var(--admin-gold-muted);
+}
+
+.admin-header .ant-divider-vertical {
+  border-inline-start-color: var(--admin-gold-border);
+}

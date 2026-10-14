@@ -219,12 +219,14 @@ export function Sidebar() {
   const sidebarContent = (isCollapsed: boolean, omitBrandToggle = false) => (
     <Flex
       vertical
+      className="admin-sidebar-content"
       style={{
         height: "100%",
         width: "100%",
         minWidth: 0,
         maxWidth: "100%",
         boxSizing: "border-box",
+        background: token.colorBgContainer,
       }}
     >
       <Flex
@@ -384,6 +386,7 @@ export function Sidebar() {
   // 2026-09-29 22:21:19 CST：保留同一个 Sider 实例才能播放 Ant Design 自带的宽度收缩过渡，不要按 collapsed 添加 key 强制重挂载。
   return (
     <Sider
+      className="admin-sidebar-surface"
       theme="light"
       collapsible
       collapsed={collapsed}
@@ -397,12 +400,12 @@ export function Sidebar() {
         }
       }}
       style={{
-        borderRight: `1px solid ${token.colorBorderSecondary}`,
-        background: token.colorBgLayout,
         alignSelf: "stretch",
         height: "100dvh",
         minHeight: 0,
         overflow: "visible",
+        background: token.colorBgContainer,
+        borderRight: `1px solid ${token.colorBorderSecondary}`,
       }}
     >
       {sidebarContent(collapsed)}

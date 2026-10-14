@@ -3,6 +3,125 @@
   overflow: visible !important;
 }
 
+/* 2026-10-14 07:25:31 CST：统一 Admin 侧栏的黑金表面、菜单状态和个人信息区配色。
+ * 触发场景：桌面侧栏及移动端抽屉渲染导航；折叠侧栏的子菜单弹层沿用相同配色。
+ * 维护注意：侧栏主体样式限定在 Admin 侧栏类名下；折叠菜单弹层由 Ant Menu 挂载到 body，使用其弹层类名单独着色。
+ */
+.admin-sidebar-surface.ant-layout-sider,
+.admin-sidebar-content {
+  color: var(--admin-gold);
+}
+
+.admin-sidebar-content .sidebar-collapsed-brand {
+  background: transparent;
+}
+
+.admin-sidebar-content .sidebar-collapsed-brand:hover {
+  background: var(--admin-gold-soft);
+}
+
+.admin-sidebar-content .sidebar-collapsed-brand__toggle.ant-btn,
+.admin-sidebar-content > .ant-flex:first-child .ant-btn {
+  color: var(--admin-gold);
+}
+
+.admin-sidebar-content .sidebar-collapsed-brand__toggle.ant-btn:hover,
+.admin-sidebar-content > .ant-flex:first-child .ant-btn:hover {
+  color: var(--admin-gold-hover);
+  background: var(--admin-gold-soft-strong);
+}
+
+.admin-sidebar-menu.ant-menu {
+  color: var(--admin-gold);
+  background: transparent;
+}
+
+.admin-sidebar-menu.ant-menu .ant-menu-item,
+.admin-sidebar-menu.ant-menu .ant-menu-submenu-title {
+  color: var(--admin-gold);
+}
+
+.admin-sidebar-menu.ant-menu .ant-menu-item .ant-menu-item-icon,
+.admin-sidebar-menu.ant-menu .ant-menu-submenu-title .ant-menu-item-icon {
+  color: var(--admin-gold-muted);
+}
+
+.admin-sidebar-menu.ant-menu .ant-menu-item:hover,
+.admin-sidebar-menu.ant-menu .ant-menu-submenu-title:hover {
+  color: var(--admin-gold-hover);
+  background: var(--admin-gold-soft);
+}
+
+.admin-sidebar-menu.ant-menu .ant-menu-item:hover .ant-menu-item-icon,
+.admin-sidebar-menu.ant-menu .ant-menu-submenu-title:hover .ant-menu-item-icon {
+  color: var(--admin-gold-hover);
+}
+
+.admin-sidebar-menu.ant-menu .ant-menu-item-selected {
+  color: #171512;
+  font-weight: 600;
+  background: #d2b15f;
+}
+
+.admin-sidebar-menu.ant-menu .ant-menu-item-selected .ant-menu-item-icon {
+  color: #171512;
+}
+
+.admin-sidebar-menu.ant-menu .ant-menu-item-group-title {
+  color: var(--admin-gold-muted) !important;
+}
+
+.admin-sidebar-menu.ant-menu .ant-menu-item-group-title span span {
+  background: var(--admin-gold-border) !important;
+}
+
+.admin-sidebar-content .user-menu-trigger {
+  color: var(--admin-gold);
+}
+
+.admin-sidebar-content .user-menu-trigger .ant-typography {
+  color: var(--admin-gold) !important;
+}
+
+.admin-sidebar-content .user-menu-trigger .ant-typography:last-of-type {
+  color: var(--admin-gold-muted) !important;
+}
+
+.admin-sidebar-content .user-menu-trigger .ant-avatar:not(.ant-avatar-image) {
+  color: #171512;
+  background: #d2b15f;
+}
+
+.admin-sidebar-content .user-menu-trigger .ant-btn {
+  color: var(--admin-gold);
+}
+
+.admin-sidebar-content .user-menu-trigger .ant-btn:hover {
+  color: var(--admin-gold-hover);
+  background: var(--admin-gold-soft-strong);
+}
+
+.ant-menu-submenu-popup .ant-menu {
+  color: var(--admin-gold);
+  background: var(--admin-theme-surface);
+}
+
+.ant-menu-submenu-popup .ant-menu-item,
+.ant-menu-submenu-popup .ant-menu-submenu-title {
+  color: var(--admin-gold);
+}
+
+.ant-menu-submenu-popup .ant-menu-item:hover,
+.ant-menu-submenu-popup .ant-menu-submenu-title:hover {
+  color: var(--admin-gold-hover);
+  background: var(--admin-gold-soft);
+}
+
+.ant-menu-submenu-popup .ant-menu-item-selected {
+  color: #171512;
+  background: #d2b15f;
+}
+
 .sidebar-collapsed-brand {
   position: relative;
   width: min(40px, 100%);

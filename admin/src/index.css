@@ -2,6 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 2026-10-14 07:33:01 CST：定义 Admin 黑金强调色的明暗主题值，保持可读性并让浮层背景跟随主题。 */
+:root {
+  --admin-theme-surface: #ffffff;
+  --admin-gold: #80611e;
+  --admin-gold-hover: #624a12;
+  --admin-gold-muted: #8a7547;
+  --admin-gold-soft: rgb(128 97 30 / 12%);
+  --admin-gold-soft-strong: rgb(128 97 30 / 14%);
+  --admin-gold-border: #b59a58;
+}
+
+:root[data-theme="dark"] {
+  --admin-theme-surface: #141414;
+  --admin-gold: #e4c77e;
+  --admin-gold-hover: #ffe3a0;
+  --admin-gold-muted: #aa945f;
+  --admin-gold-soft: rgb(228 199 126 / 12%);
+  --admin-gold-soft-strong: rgb(228 199 126 / 14%);
+  --admin-gold-border: #80662f;
+}
+
 /* 2026-09-12 00:00:00 CST：合并 h5 后由主项目统一加载 Tailwind，保证 module 页面和 admin 共用一个构建入口。 */
 * {
   margin: 0;

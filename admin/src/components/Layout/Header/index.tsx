@@ -2,12 +2,25 @@ import { Layout, Button, Space, theme, Breadcrumb, Flex, Divider, Grid } from "a
 import type { ItemType } from "antd/es/breadcrumb/Breadcrumb";
 import { useSettingsStore } from "@/stores/settings";
 import { Link, useLocation, useMatches } from "@tanstack/react-router";
-import { Home, PanelLeft, ShieldAlert, Users, Volume2 } from "lucide-react";
+import {
+  Ban,
+  Book,
+  BookOpen,
+  Home,
+  LayoutDashboard,
+  PanelLeft,
+  ShieldAlert,
+  SlidersHorizontal,
+  User,
+  Users,
+  Volume2,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { Theme } from "@/components/Icon";
 import { useI18n } from "@/i18n";
 import { playVisitorSound } from "@/utils/visitorSound";
+import "./index.css";
 
 const { Header: AntHeader } = Layout;
 
@@ -17,9 +30,25 @@ const PATH_LABEL: Record<string, string> = {
   "/blacklist": "menu.blacklist",
   "/visitors": "menu.visitors",
   "/mappings": "menu.mappings",
+  "/dictionary": "menu.dictionary",
   "/templates": "menu.templates",
   "/audit-logs": "menu.auditLogs",
   "/403": "403",
+};
+
+// 2026-10-14 07:27:39 CST：让面包屑图标与侧栏路由菜单的图标保持一致。
+// 触发场景：进入任意 Admin 页面时显示仪表盘入口和当前页面图标。
+// 维护注意：新增或修改侧栏路由图标时需同步更新此表；未知路由继续回退为首页图标。
+const PATH_ICON: Record<string, LucideIcon> = {
+  "/dashboard": LayoutDashboard,
+  "/users": User,
+  "/blacklist": Ban,
+  "/visitors": Users,
+  "/mappings": Book,
+  "/dictionary": Book,
+  "/templates": SlidersHorizontal,
+  "/audit-logs": BookOpen,
+  "/403": ShieldAlert,
 };
 
 function normalizePath(pathname: string): string {
@@ -76,8 +105,7 @@ export function Header({ showBreadcrumb: showBreadcrumbProp = true }: HeaderProp
   const firstSegmentPath = segments.length ? `/${segments[0]}` : "/dashboard";
   const leafLabelKey = PATH_LABEL[firstSegmentPath] ?? "menu.dashboard";
 
-  const leafIcon: LucideIcon =
-    firstSegmentPath === "/users" ? Users : firstSegmentPath === "/403" ? ShieldAlert : Home;
+  const leafIcon = PATH_ICON[firstSegmentPath] ?? Home;
 
   const leafLabel = t(leafLabelKey);
   const enableVisitorSound = async () => {
@@ -93,11 +121,11 @@ export function Header({ showBreadcrumb: showBreadcrumbProp = true }: HeaderProp
 
   if (onDashboard) {
     breadcrumbItems.push({
-      title: crumb(Home, t("menu.dashboard")),
+      title: crumb(PATH_ICON["/dashboard"], t("menu.dashboard")),
     });
   } else {
     breadcrumbItems.push({
-      title: crumb(Home, t("menu.dashboard"), "/admin/dashboard"),
+      title: crumb(PATH_ICON["/dashboard"], t("menu.dashboard"), "/admin/dashboard"),
     });
 
     breadcrumbItems.push({
@@ -119,8 +147,9 @@ export function Header({ showBreadcrumb: showBreadcrumbProp = true }: HeaderProp
 
   return (
     <AntHeader
+      className="admin-header"
       style={{
-        background: "transparent",
+        background: token.colorBgContainer,
         borderBottom: `1px solid ${token.colorBorderSecondary}`,
         padding: `0 ${token.padding}px`,
         gap: token.sizeLG,
